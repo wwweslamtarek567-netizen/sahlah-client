@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل عميل - سهلة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="config.js"></script>
+<style>
+body{margin:0;font-family:'Cairo',sans-serif;background:#fff;min-height:100vh;display:flex;flex-direction:column;}
+.header{padding:20px;text-align:center;border-bottom:1px solid #f0f0f0;}
+.header h2{margin:0;font-weight:800;color:#ff6a00;}
+.form-wrap{padding:25px;flex:1;}
+.input-group{margin-bottom:18px;}
+.input-group label{display:block;font-weight:700;margin-bottom:8px;font-size:14px;}
+.input-group input, .input-group textarea{width:100%;padding:14px;border:1.5px solid #e0e0e0;border-radius:12px;font-family:'Cairo',sans-serif;font-size:15px;box-sizing:border-box;outline:none;}
+.input-group input:focus, .input-group textarea:focus{border-color:#ff6a00;}
+.btn{background:#ff6a00;color:white;border:none;width:100%;padding:15px;border-radius:12px;font-family:'Cairo',sans-serif;font-size:17px;font-weight:800;cursor:pointer;margin-top:10px;}
+.btn:disabled{background:#ccc;}
+.back{margin-top:15px;text-align:center;}
+.back a{color:#777;text-decoration:none;font-size:14px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h2><i class="fa-solid fa-bag-shopping"></i> تسجيل عميل جديد</h2>
+  <p style="color:#777;font-size:13px;margin-top:5px;">سجل عشان تطلب اللي نفسك فيه</p>
+</div>
+
+<div class="form-wrap">
+  <div class="input-group">
+    <label>الاسم</label>
+    <input type="text" id="cName" placeholder="مثال: احمد محمد">
+  </div>
+  <div class="input-group">
+    <label>رقم الموبايل</label>
+    <input type="tel" id="cPhone" placeholder="010xxxxxxxx">
+  </div>
+  <div class="input-group">
+    <label>العنوان</label>
+    <textarea id="cAddress" rows="3" placeholder="مثال: المنصورة - شارع الجلاء..."></textarea>
+  </div>
+
+  <button class="btn" id="saveBtn" onclick="registerClient()">دخول <i class="fa-solid fa-arrow-left"></i></button>
+  
+  <div class="back">
+    <a href="role.html"><i class="fa-solid fa-arrow-right"></i> الرجوع لاختيار النوع</a>
+  </div>
+</div>
+
+<script>
+function cleanP(p){ return String(p||'').replace(/\D/g,''); }
+
+async function registerClient(){
+  let name = document.getElementById('cName').value.trim();
+  let phone = document.getElementById('cPhone').value.trim();
+  let address = document.getElementById('cAddress').value.trim();
+  let btn = document.getElementById('saveBtn');
+
+  if(!name || !phone){
+    alert('اكتب اسمك ورقم الموبايل'); return;
+  }
+  if(phone.length < 11){
+    alert('رقم الموبايل ناقص'); return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = 'جاري الحفظ...';
+  
+  let key = cleanP(phone);
+
+  try{
+    if(typeof DB_URL !== 'undefined'){
+      await fetch(DB_URL + '/clients/' + key + '.json', {
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          name: name,
+          phone: phone,
+          address: address,
+          createdAt: new Date().toISOString()
+        })
+      });
+    }
+
+    localStorage.setItem('sahla_role', 'client');
+    localStorage.setItem('clientName', name);
+    localStorage.setItem('clientPhone', phone);
+    localStorage.setItem('clientAddress', address);
+
+    window.location.href = 'index.html';
+
+  }catch(e){
+    localStorage.setItem('sahla_role', 'client');
+    localStorage.setItem('clientName', name);
+    localStorage.setItem('clientPhone', phone);
+    localStorage.setItem('clientAddress', address);
+    window.location.href = 'index.html';
+  }
+}
+</script>
+</body>
+  </html>
