@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>موقعك الحالي - سهلة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="config.js"></script>
+<style>
+*{box-sizing:border-box;font-family:'Cairo',sans-serif}
+body{margin:0;background:#f7f7f7}
+.header{background:#ff6a00;color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.header a{color:#fff;text-decoration:none;font-size:20px}
+#map{height:55vh;width:100%;z-index:1}
+.card{background:#fff;margin:-20px 12px 12px 12px;border-radius:22px;padding:16px;box-shadow:0 8px 25px rgba(0,0,0,.08);position:relative;z-index:2}
+.badge{display:inline-flex;align-items:center;gap:6px;background:#e8f5e9;color:#1b5e20;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:800}
+.addr-input{width:100%;padding:14px;border:1.5px solid #eee;border-radius:14px;margin-top:10px;outline:none;font-size:14px}
+.addr-input:focus{border-color:#ff6a00}
+.btn{width:100%;border:none;border-radius:14px;padding:15px;font-weight:900;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+.btn-orange{background:#ff6a00;color:#fff}
+.btn-blue{background:#007aff;color:#fff}
+.btn-gray{background:#eee;color:#333}
+.info-row{display:flex;justify-content:space-between;margin-top:10px;font-size:13px;color:#666}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html"><i class="fa-solid fa-arrow-right"></i></a>
+  <h3>موقعك الحالي</h3>
+  <i class="fa-solid fa-location-crosshairs" onclick="getLocation()"></i>
+</div>
+
+<div id="map"></div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <span class="badge" id="gpsBadge"><i class="fa-solid fa-circle-notch fa-spin"></i> جاري تحديد موقعك</span>
+    <span style="font-size:12px;color:#999" id="coords">-- , --</span>
+  </div>
+
+  <div style="margin-top:12px">
+    <label style="font-weight:800;font-size:13px">عنوانك بالتفصيل:</label>
+    <input id="addressInput" class="addr-input" placeholder="مثال: المنصورة - شارع الجمهورية - بجوار مسجد...">
+    <input id="detailsInput" class="addr-input" placeholder="علامة مميزة - رقم البيت - الدور (اختياري)">
+  </div>
+
+  <div class="info-row">
+    <span><i class="fa-solid fa-location-dot" style="color:#ff6a00"></i> حرك الدبوس لتعديل الموقع</span>
+    <span id="accText" style="color:#007aff">دقة: --</span>
+  </div>
+
+  <button class="btn btn-blue" onclick="getLocation()"><i class="fa-solid fa-crosshairs"></i> تحديث موقعي الحالي</button>
+  <button class="btn btn-orange" onclick="saveLocation()"><i class="fa-solid fa-check"></i> تأكيد وحفظ الموقع</button>
+  <button class="btn btn-gray" onclick="openGoogleMaps()"><i class="fa-solid fa-map-location-dot"></i> فتح في خرائط جوجل</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let myLat = null, myLng = null, accuracy = null;
+let map, marker;
+
+map = L.map('map', {zoomControl:false}).setView([31.0379,31.3815], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+let myIcon = L.icon({
+  iconUrl:'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl:'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34], shadowSize:[41,41]
+});
+
+function updateMarker(lat,lng,acc){
+  myLat=lat; myLng=lng; accuracy=acc;
+  document.getElementById('coords').innerText = lat.toFixed(5)+' , '+lng.toFixed(5);
+  if(acc) document.getElementById('accText').innerText = 'دقة: '+Math.round(acc)+' متر';
+  document.getElementById('gpsBadge').innerHTML = '<i class="fa-solid fa-circle-check"></i> تم تحديد موقعك';
+
+  if(marker) map.removeLayer(marker);
+  marker = L.marker([lat,lng],{icon:myIcon, draggable:true}).addTo(map).bindPopup('📍 موقعك هنا - اسحبه لتعديله').openPopup();
+  map.setView([lat,lng],16);
+
+  marker.on('dragend', function(e){
+    let p = e.target.getLatLng();
+    myLat = p.lat; myLng = p.lng;
+    document.getElementById('coords').innerText = myLat.toFixed(5)+' , '+myLng.toFixed(5);
+    reverseGeocode(myLat, myLng);
+  });
+
+  reverseGeocode(lat,lng);
+  localStorage.setItem('clientLat', lat);
+  localStorage.setItem('clientLng', lng);
+}
+
+async function reverseGeocode(lat,lng){
+  try{
+    let res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ar`);
+    let data = await res.json();
+    if(data.display_name){
+      // حط العنوان التلقائي لو العميل لسه مكتبش حاجة
+      let input = document.getElementById('addressInput');
+      if(!input.value) input.value = data.display_name;
+    }
+  }catch(e){}
+}
+
+function getLocation(){
+  document.getElementById('gpsBadge').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري تحديد موقعك';
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>{
+      updateMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+    }, err=>{
+      document.getElementById('gpsBadge').innerHTML = '⚠️ فعل الـ GPS';
+      alert('فعل الـ GPS من الموبايل وادينا صلاحية الموقع');
+    }, {enableHighAccuracy:true, timeout:15000});
+  } else {
+    alert('المتصفح لا يدعم تحديد الموقع');
+  }
+}
+
+function saveLocation(){
+  let addr = document.getElementById('addressInput').value.trim();
+  let details = document.getElementById('detailsInput').value.trim();
+  if(!myLat){ alert('حدد موقعك الأول'); return; }
+  if(!addr){ alert('اكتب عنوانك'); return; }
+
+  let fullAddr = addr + (details? ' - '+details : '');
+  localStorage.setItem('clientAddress', fullAddr);
+  localStorage.setItem('clientLat', myLat);
+  localStorage.setItem('clientLng', myLng);
+  localStorage.setItem('clientAddressDetails', details);
+
+  alert('✅ تم حفظ موقعك: \n'+fullAddr);
+  // ارجع لصفحة الطلبات او الخضار
+  if(document.referrer) history.back();
+  else location.href='vegetables.html';
+}
+
+function openGoogleMaps(){
+  if(!myLat) { getLocation(); return; }
+  window.open(`https://www.google.com/maps?q=${myLat},${myLng}`, '_blank');
+}
+
+// ابدأ
+getLocation();
+
+// لو كان حافظ عنوان قبل كده اظهره
+window.onload=()=>{
+  let savedAddr = localStorage.getItem('clientAddress');
+  if(savedAddr) document.getElementById('addressInput').value = savedAddr;
+}
+</script>
+</body>
+  </html>
