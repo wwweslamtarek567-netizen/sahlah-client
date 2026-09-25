@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>الخضروات - سهلة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+*{font-family:'Cairo';box-sizing:border-box;margin:0;padding:0}
+body{background:#f8f8f8}
+.box{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:90px}
+.header{height:70px;background:#ff6a00;display:flex;align-items:center;justify-content:space-between;padding:0 15px;color:#fff;border-radius:0 0 22px 22px}
+.header button{width:38px;height:38px;border:none;background:rgba(0,0,0,.2);border-radius:50%;color:#fff;font-size:20px;cursor:pointer}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:15px}
+.card{background:#fff;border-radius:18px;padding:10px;box-shadow:0 4px 12px rgba(0,0,0,.05);text-align:center}
+.card img{width:100%;height:90px;object-fit:cover;border-radius:12px}
+.card h4{margin:8px 0 4px;font-size:14px;font-weight:800}
+.card p{color:#ff6a00;font-weight:900;font-size:13px}
+.card button{width:100%;margin-top:8px;background:#FFF6EC;border:1px solid #FFD6A8;color:#ff6a00;border-radius:10px;padding:8px;font-weight:800;cursor:pointer}
+.cart-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;box-shadow:0 -2px 15px rgba(0,0,0,.08);padding:12px 15px;display:flex;justify-content:space-between;align-items:center}
+.cart-bar button{background:#ff6a00;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-weight:900;font-family:'Cairo';cursor:pointer}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="header">
+    <div style="font-weight:900;font-size:18px;">🥬 قسم الخضروات</div>
+    <button onclick="history.back()">›</button>
+  </div>
+  <div class="grid" id="vegGrid"></div>
+</div>
+
+<div class="cart-bar">
+  <div>السلة: <b id="count">0</b> | <b id="total">0</b> جنيه</div>
+  <button onclick="sendOrder()">اطلب الآن 🚀</button>
+</div>
+
+<script>
+const vegetables = [
+  {id:1,name:'طماطم',price:15,img:'https://images.unsplash.com/photo-1561136594-7f68413baa99?w=300'},
+  {id:2,name:'بطاطس',price:12,img:'https://images.unsplash.com/photo-1518977676608-bd36ea64ae00?w=300'},
+  {id:3,name:'بصل',price:18,img:'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=300'},
+  {id:4,name:'خيار',price:10,img:'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300'},
+  {id:5,name:'جزر',price:14,img:'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=300'},
+  {id:6,name:'فلفل',price:20,img:'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=300'},
+];
+
+let cart = [];
+let total = 0;
+
+function render(){
+  document.getElementById('vegGrid').innerHTML = vegetables.map(v=>`
+    <div class="card">
+      <img src="${v.img}">
+      <h4>${v.name}</h4>
+      <p>${v.price} جنيه / كيلو</p>
+      <button onclick="addToCart(${v.id})">+ إضافة</button>
+    </div>
+  `).join('');
+}
+
+function addToCart(id){
+  let item = vegetables.find(v=>v.id==id);
+  cart.push(item);
+  total += item.price;
+  document.getElementById('count').innerText = cart.length;
+  document.getElementById('total').innerText = total;
+}
+
+async function sendOrder(){
+  if(cart.length==0){ alert('السلة فاضية'); return; }
+
+  let clientPhone = localStorage.getItem('clientPhone');
+  if(!clientPhone){ alert('سجل دخول الاول'); window.location.href='register-client.html'; return; }
+
+  try{
+    // === الجديد هنا: نجيب بيانات العميل الطازة من Firebase عشان نثبت العنوان واللوكيشن ===
+    let clientRes = await fetch(DB_URL + '/clients/' + clientPhone + '.json?t=' + Date.now());
+    let client = await clientRes.json();
+
+    // لو مش لاقيه بالرقم مباشر ندور في القايمة كلها
+    if(!client ||!client.address){
+      let allRes = await fetch(DB_URL + '/clients.json?t=' + Date.now());
+      let all = await allRes.json();
+      if(all){
+        if(Array.isArray(all)){
+          client = all.find(c=> String(c.phone)==String(clientPhone)) || client;
+        }else{
+          client = Object.values(all).find(c=> String(c.phone)==String(clientPhone)) || all[clientPhone] || client;
+        }
+      }
+    }
+
+    if(!client ||!client.address){
+      alert('عنوانك مش متسجل، سجل عنوانك الاول');
+      window.location.href='register-client.html';
+      return;
+    }
+
+    let orderId = Date.now();
+    let orderData = {
+      id: orderId,
+      clientName: client.name || localStorage.getItem('clientName') || 'عميل',
+      clientPhone: clientPhone,
+      phone: clientPhone,
+      clientAddress: client.address,
+      address: client.address,
+      lat: client.lat || null,
+      lng: client.lng || null,
+      location: client.location || null,
+      items: cart.map(c=>({name:c.name, price:c.price})),
+      total: total,
+      type: 'خضروات',
+      status: 'جديد',
+      createdAt: new Date().toISOString()
+    };
+
+    await fetch(DB_URL + '/orders/' + orderId + '.json', {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(orderData)
+    });
+
+    // حدث العنوان في اللوكال كمان
+    localStorage.setItem('clientAddress', client.address);
+
+    alert('✅ تم ارسال الطلب للمناديب بنجاح!\nالعنوان: ' + client.address + '\nرقم الطلب: ' + orderId);
+    cart=[]; total=0;
+    document.getElementById('count').innerText='0';
+    document.getElementById('total').innerText='0';
+    window.location.href='index.html';
+  }catch(e){
+    alert('فيه مشكلة في السيرفر: ' + e);
+  }
+}
+
+render();
+</script>
+</body>
+  </html>
