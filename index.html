@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحكم - سهلة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="config.js"></script>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:'Cairo',sans-serif;background:#f8f8f8;padding-bottom:90px;user-select:none}
+.header{background:#ff6a00;color:white;padding:15px 20px 25px 20px;border-bottom-left-radius:25px;border-bottom-right-radius:25px;display:flex;justify-content:space-between;align-items:center}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:15px}
+.c{border-radius:18px;padding:15px;text-align:center}
+.c i{font-size:32px;margin-bottom:8px;display:block}
+.c.num{font-size:24px;font-weight:800}
+.c.lbl{font-size:13px;font-weight:700;color:#555}
+.c-green{background:#e8f5e9}.c-blue{background:#e3f2fd}.c-orange{background:#fff3e0}.c-purple{background:#f3e5f5}
+.list-box{background:white;margin:0 10px 15px 10px;border-radius:20px;padding:15px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.search{width:100%;padding:12px 15px;border-radius:30px;border:1.5px solid #ddd;font-family:'Cairo';outline:none;margin:10px 0 15px 0}
+.rider-row{display:flex;align-items:center;justify-content:space-between;padding:12px;border:1px solid #f0f0f0;border-radius:15px;margin-bottom:10px;background:white;cursor:pointer;transition:.1s}
+.rider-row:active{transform:scale(.97);background:#fff8f0;border-color:#ff6a00}
+.rider-row.deleting{opacity:.4}
+.rider-row.right{display:flex;align-items:center;gap:10px}
+.rider-row img{width:45px;height:45px;border-radius:50%}
+.status{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.s-ok{background:#e8f5e9;color:#1b5e20}.s-road{background:#fff3e0;color:#e65100}.s-off{background:#ffebee;color:#b71c1c}.s-block{background:#000;color:white}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #eee;display:flex;justify-content:space-around;padding:10px 0;z-index:100}
+.bottom-nav div{text-align:center;color:#888;font-size:12px;cursor:pointer;flex:1}
+.bottom-nav div.active{color:#ff6a00;font-weight:800}
+.bottom-nav i{font-size:22px;display:block;margin-bottom:3px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:500;padding:20px}
+.modal.show{display:flex}
+.modal-box{background:white;width:100%;max-width:340px;border-radius:20px;padding:22px;text-align:center;animation:pop.2s}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.del-btn{width:48%;padding:13px;border:none;border-radius:12px;font-family:'Cairo';font-weight:800;cursor:pointer}
+.switch{position:relative;display:inline-block;width:50px;height:28px}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:20px;transition:.3s}
+.slider:before{position:absolute;content:"";height:20px;width:20px;left:4px;bottom:4px;background:white;border-radius:50%;transition:.3s}
+input:checked +.slider{background:#2E7D32}
+input:checked +.slider:before{transform:translateX(22px)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex;gap:12px;align-items:center">
+    <i class="fa-solid fa-bell" style="font-size:26px;cursor:pointer"></i>
+  </div>
+  <div style="text-align:center"><div style="font-size:28px;font-weight:800">سهلة للتوصيل</div><div style="background:#a13c00;border-radius:20px;padding:4px 20px;margin-top:8px;font-size:14px">لوحة التحكم</div></div>
+  <div><img src="https://ui-avatars.com/api/?name=Admin&background=fff&color=ff6a00" style="width:45px;height:45px;border-radius:50%"></div>
+</div>
+
+<div class="cards">
+  <div class="c c-green"><i class="fa-solid fa-coins" style="color:#00a651"></i><div class="num" id="totalBalance">0</div><div class="lbl">جنيه<br>إجمالي الأرصدة</div></div>
+  <div class="c c-blue"><i class="fa-solid fa-clipboard-check" style="color:#007aff"></i><div class="num" id="totalOrders">0</div><div class="lbl">طلب<br>إجمالي الطلبات</div></div>
+  <div class="c c-orange"><i class="fa-solid fa-user" style="color:#ff6a00"></i><div class="num" id="totalRiders">0</div><div class="lbl">مندوب<br>إجمالي المندوبين</div></div>
+  <div class="c c-purple"><i class="fa-solid fa-users" style="color:#9c27b0"></i><div class="num" id="totalClients">0</div><div class="lbl">عميل<br>إجمالي العملاء</div></div>
+</div>
+
+<div style="padding:0 15px;margin-bottom:12px">
+  <a href="recharge_requests.html" style="text-decoration:none">
+    <div style="background:white;border-radius:18px;padding:15px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.05);border-right:5px solid #ff6a00">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="background:#fff3e0;width:45px;height:45px;border-radius:12px;display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-money-bill-transfer" style="color:#ff6a00;font-size:22px"></i></div>
+        <div>
+          <div style="font-weight:800;color:#333">طلبات الشحن - فودافون كاش</div>
+          <div style="font-size:12px;color:#888">شوف صور التحويلات وأكد الرصيد - دوسة طويلة للحذف</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="rechargeCount" style="background:red;color:white;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:800;display:none">0 جديد</span>
+        <i class="fa-solid fa-chevron-left" style="color:#ccc"></i>
+      </div>
+    </div>
+  </a>
+</div>
+
+<div style="padding:0 15px;margin-bottom:15px">
+  <div style="background:white;border-radius:18px;padding:15px;box-shadow:0 2px 10px rgba(0,0,0,.05);border-right:5px solid #2E7D32">
+    <a href="store_orders.html" style="text-decoration:none;color:inherit;display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="background:#E8F5E9;width:45px;height:45px;border-radius:12px;display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-shirt" style="color:#2E7D32;font-size:22px"></i></div>
+        <div>
+          <div style="font-weight:800;color:#333">طلبات متجر الطقم</div>
+          <div style="font-size:12px;color:#888">شوف طلبات التيشيرتات والمقاسات</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="storeCount" style="background:red;color:white;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:800;display:none">0 جديد</span>
+        <i class="fa-solid fa-chevron-left" style="color:#ccc"></i>
+      </div>
+    </a>
+    <div style="margin-top:12px; background:#f8fdf8; border:1.5px solid #c8e6c9; border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="display:flex;align-items:center;gap:8px">
+        <i class="fa-solid fa-power-off" style="color:#2E7D32"></i>
+        <span id="storeStatusText" style="font-weight:800; font-size:13px; color:#2E7D32">● المتجر مفتوح</span>
+      </div>
+      <label class="switch" onclick="event.stopPropagation()">
+        <input type="checkbox" id="storeToggle" onchange="toggleStore()">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- قائمة المناديب -->
+<div class="list-box">
+  <h3 style="margin:0;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-users" style="color:#ff6a00"></i> قائمة المندوبين <small id="src" style="font-size:10px;color:#888"></small></h3>
+  <input id="search" class="search" placeholder="ابحث باسم المندوب أو رقم الهاتف... 🔍" onkeyup="render()">
+  <div id="ridersList">جاري التحميل...</div>
+  <div style="text-align:center;font-size:11px;color:#aaa;margin-top:10px">💡 دوسة طويلة على المندوب لحذفه</div>
+</div>
+
+<!-- قائمة العملاء الجديدة -->
+<div class="list-box" style="border-right:5px solid #007aff">
+  <h3 style="margin:0;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-user-group" style="color:#007aff"></i> قائمة العملاء <small id="clientsSrc" style="font-size:10px;color:#888"></small></h3>
+  <input id="searchClients" class="search" placeholder="ابحث باسم العميل أو رقم الهاتف... 🔍" onkeyup="renderClients()">
+  <div id="clientsList">جاري تحميل العملاء...</div>
+  <div style="text-align:center;font-size:11px;color:#aaa;margin-top:10px">💡 أي عميل يسجل هيظهر هنا تلقائي - دوسة طويلة للحذف</div>
+</div>
+
+<div class="bottom-nav">
+  <div onclick="location.href='recharge_requests.html'"><i class="fa-solid fa-money-bill-transfer"></i> الشحن <span id="navCount" style="display:none;background:red;color:white;border-radius:10px;padding:0 5px;font-size:10px">!</span></div>
+  <div><i class="fa-solid fa-users"></i> المندوبين</div>
+  <div class="active"><i class="fa-solid fa-house"></i> الرئيسية</div>
+</div>
+
+<div class="modal" id="deleteModal">
+  <div class="modal-box">
+    <div style="width:60px;height:60px;background:#ffebee;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px"><i class="fa-solid fa-trash" style="color:red;font-size:26px"></i></div>
+    <h3 style="margin:0" id="delTitle">حذف المندوب؟</h3>
+    <div id="delInfo" style="margin:10px 0;font-size:14px;color:#555;line-height:1.7"></div>
+    <div style="display:flex;gap:10px;margin-top:15px">
+      <button class="del-btn" style="background:#eee;color:#333" onclick="closeDeleteModal()">إلغاء</button>
+      <button class="del-btn" style="background:#d32f2f;color:white" onclick="confirmDelete()">نعم، احذف</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allRiders=[];
+let allClients=[];
+let riderToDelete = null;
+let clientToDelete = null;
+let deleteType = 'rider';
+const STORE_SETTINGS_URL = DB_URL + '/settings/uniformStore.json';
+
+async function loadStoreStatus(){
+  try{
+    let res = await fetch(STORE_SETTINGS_URL + '?t=' + Date.now());
+    let data = await res.json();
+    let isOpen = data?.isOpen?? true;
+    document.getElementById('storeToggle').checked = isOpen;
+    document.getElementById('storeStatusText').innerText = isOpen? '● المتجر مفتوح' : '○ المتجر مغلق';
+    document.getElementById('storeStatusText').style.color = isOpen? '#2E7D32' : '#999';
+  }catch(e){}
+}
+async function toggleStore(){
+  let isOpen = document.getElementById('storeToggle').checked;
+  document.getElementById('storeStatusText').innerText = isOpen? '● المتجر مفتوح' : '○ المتجر مغلق';
+  document.getElementById('storeStatusText').style.color = isOpen? '#2E7D32' : '#999';
+  await fetch(STORE_SETTINGS_URL, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({isOpen: isOpen, updatedAt: Date.now()})});
+}
+
+async function load(){
+  try{
+    document.getElementById('src').innerText='(Firebase: '+DB_URL.replace('https://','').split('.')[0]+' ✓)';
+    const res = await fetch(DB_URL + '/riders.json?t=' + Date.now());
+    if(!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    if(!data){ allRiders = []; }
+    else if(Array.isArray(data)){
+      allRiders = data.map((r,i)=>({ key: i, phone: String(r.phone||r.id).trim(), bal: parseFloat(r.balance)||0, delivered: parseInt(r.orders||0), status: r.status||'متاح', name: r.name||'مندوب', isArray: true })).filter(r=>r.phone);
+    } else {
+      allRiders = Object.keys(data).map(k=>({ key: k, phone: String(data[k].phone||k||'').trim(), bal: parseFloat(data[k].balance)||0, delivered: parseInt(data[k].orders||0), status: data[k].status||'متاح', name: data[k].name||'مندوب', isArray: false }));
+    }
+  }catch(e){
+    console.error(e);
+    document.getElementById('ridersList').innerHTML = '<div style="text-align:center;padding:20px;color:red">فشل الاتصال بالسيرفر<br><small>'+e.message+'</small></div>';
+  }
+  render();
+}
+
+async function loadClients(){
+  try{
+    document.getElementById('clientsSrc').innerText='(Firebase: clients)';
+    const res = await fetch(DB_URL + '/clients.json?t=' + Date.now());
+    const data = await res.json();
+    if(!data){ allClients = []; }
+    else if(Array.isArray(data)){
+      allClients = data.map((c,i)=>({ key: i, phone: String(c.phone||c.clientPhone||'').trim(), name: c.name||c.clientName||'عميل', address: c.address||'', date: c.createdAt||c.date||'' })).filter(c=>c.phone);
+    } else {
+      allClients = Object.keys(data).map(k=>({ key: k, phone: String(data[k].phone||data[k].clientPhone||k).trim(), name: data[k].name||data[k].clientName||'عميل', address: data[k].address||'', date: data[k].createdAt||data[k].date||'' }));
+    }
+  }catch(e){
+    console.error('clients error', e);
+    document.getElementById('clientsList').innerHTML = '<div style="text-align:center;padding:15px;color:#888">مفيش عملاء لسه</div>';
+    allClients = [];
+  }
+  renderClients();
+}
+
+function render(){
+  let q=document.getElementById('search').value.toLowerCase().trim();
+  let filtered = allRiders.filter(r=> r.name.toLowerCase().includes(q) || r.phone.includes(q));
+  let totalBal=0, totalOrders=0;
+  filtered.forEach(r=>{totalBal+=r.bal; totalOrders+=r.delivered});
+  document.getElementById('totalBalance').innerText = totalBal;
+  document.getElementById('totalOrders').innerText = totalOrders;
+  document.getElementById('totalRiders').innerText = allRiders.length;
+  document.getElementById('totalClients').innerText = allClients.length;
+  document.getElementById('todayProfit').innerText = totalOrders * 6;
+  if(filtered.length===0){
+    document.getElementById('ridersList').innerHTML = '<div style="text-align:center;padding:20px;color:#888">مفيش مناديب</div>';
+    return;
+  }
+  document.getElementById('ridersList').innerHTML = filtered.map(r=>{
+    let cls = r.status==='متاح'?'s-ok':r.status==='في الطريق'?'s-road':r.status==='محظور'?'s-block':'s-off';
+    return `<div class="rider-row" data-phone="${r.phone}" data-key="${r.key}" data-name="${r.name}" onclick="openDetails('${r.phone}')" ontouchstart="startPress(this,'rider')" ontouchend="endPress()" ontouchmove="endPress()" onmousedown="startPress(this,'rider')" onmouseup="endPress()" onmouseleave="endPress()" oncontextmenu="return false;"><div style="display:flex;align-items:center;gap:12px"><i class="fa-solid fa-chevron-left" style="color:#ccc"></i><div class="status ${cls}">${r.status}</div><div style="text-align:center;min-width:45px"><b>${r.delivered}</b><br><small>طلب</small></div><div style="text-align:center;min-width:45px"><b>${r.bal}</b><br><small>جنيه</small></div></div><div class="right" style="display:flex;align-items:center;gap:10px"><div style="text-align:right"><div style="direction:ltr;font-size:13px;color:#555">${r.phone}</div><b>${r.name}</b></div><img src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=ff6a00&color=fff"></div></div>`;
+  }).join('');
+}
+
+function renderClients(){
+  let q = document.getElementById('searchClients').value.toLowerCase().trim();
+  let filtered = allClients.filter(c=> c.name.toLowerCase().includes(q) || c.phone.includes(q));
+  document.getElementById('totalClients').innerText = allClients.length;
+  if(filtered.length===0){
+    document.getElementById('clientsList').innerHTML = '<div style="text-align:center;padding:15px;color:#888">مفيش عملاء يطابقوا البحث</div>';
+    return;
+  }
+  document.getElementById('clientsList').innerHTML = filtered.map(c=>`
+    <div class="rider-row" data-phone="${c.phone}" data-key="${c.key}" data-name="${c.name}" onclick="openClientDetails('${c.phone}')" ontouchstart="startPress(this,'client')" ontouchend="endPress()" ontouchmove="endPress()" onmousedown="startPress(this,'client')" onmouseup="endPress()" onmouseleave="endPress()" oncontextmenu="return false;">
+      <div style="display:flex;align-items:center;gap:12px">
+        <i class="fa-solid fa-chevron-left" style="color:#ccc"></i>
+        <div style="background:#e3f2fd;color:#1565c0;padding:6px 10px;border-radius:20px;font-size:11px;font-weight:800"><i class="fa-solid fa-user"></i> عميل</div>
+        <div style="text-align:right;font-size:12px;color:#666;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.address||'بدون عنوان'}</div>
+      </div>
+      <div class="right" style="display:flex;align-items:center;gap:10px">
+        <div style="text-align:right">
+          <div style="direction:ltr;font-size:13px;color:#555">${c.phone}</div>
+          <b>${c.name}</b>
+        </div>
+        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=007aff&color=fff">
+      </div>
+    </div>
+  `).join('');
+}
+
+function openDetails(phone){ if(window.pressing) return; location.href='rider-details.html?phone='+phone; }
+function openClientDetails(phone){ if(window.pressing) return; location.href='client-details.html?phone='+phone; }
+
+let pressTimer = null;
+window.pressing = false;
+function startPress(el,type){
+  window.pressing = false;
+  clearTimeout(pressTimer);
+  el.classList.add('deleting');
+  pressTimer = setTimeout(()=>{
+    window.pressing = true;
+    if(navigator.vibrate) navigator.vibrate(70);
+    if(type==='client'){
+      deleteType='client';
+      clientToDelete = { phone: el.dataset.phone, key: el.dataset.key, name: el.dataset.name, element: el };
+      document.getElementById('delTitle').innerText='حذف العميل؟';
+      document.getElementById('delInfo').innerHTML = `<b>${clientToDelete.name}</b><br><span style="direction:ltr;display:inline-block">${clientToDelete.phone}</span><br><small style="color:#999">ID: ${clientToDelete.key}</small>`;
+    } else {
+      deleteType='rider';
+      riderToDelete = { phone: el.dataset.phone, key: el.dataset.key, name: el.dataset.name, element: el };
+      document.getElementById('delTitle').innerText='حذف المندوب؟';
+      document.getElementById('delInfo').innerHTML = `<b>${riderToDelete.name}</b><br><span style="direction:ltr;display:inline-block">${riderToDelete.phone}</span><br><small style="color:#999">ID: ${riderToDelete.key}</small>`;
+    }
+    document.getElementById('deleteModal').classList.add('show');
+    el.classList.remove('deleting');
+  }, 700);
+}
+function endPress(){
+  clearTimeout(pressTimer);
+  document.querySelectorAll('.rider-row').forEach(x=>x.classList.remove('deleting'));
+  setTimeout(()=>{ window.pressing=false; }, 300);
+}
+function closeDeleteModal(){
+  document.getElementById('deleteModal').classList.remove('show');
+  riderToDelete = null;
+  clientToDelete = null;
+}
+async function confirmDelete(){
+  if(deleteType==='client'){
+    if(!clientToDelete) return;
+    try{
+      await fetch(DB_URL + '/clients/' + clientToDelete.key + '.json',{method:'DELETE'});
+      await fetch(DB_URL + '/clients/' + clientToDelete.phone + '.json',{method:'DELETE'});
+      allClients = allClients.filter(r=> String(r.phone)!==String(clientToDelete.phone));
+      renderClients();
+      closeDeleteModal();
+      alert('✅ تم حذف العميل '+clientToDelete.phone);
+    }catch(e){ alert('فشل الحذف: '+e.message); }
+  } else {
+    if(!riderToDelete) return;
+    try{
+      if(!isNaN(riderToDelete.key)){
+        let res = await fetch(DB_URL + '/riders.json');
+        let data = await res.json();
+        if(Array.isArray(data)){
+          data = data.filter((x,i)=> String(i)!==String(riderToDelete.key) && String(x.phone||'')!==riderToDelete.phone);
+          await fetch(DB_URL + '/riders.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+        } else {
+          await fetch(DB_URL + '/riders/' + riderToDelete.key + '.json',{method:'DELETE'});
+          await fetch(DB_URL + '/riders/' + riderToDelete.phone + '.json',{method:'DELETE'});
+        }
+      } else {
+        await fetch(DB_URL + '/riders/' + riderToDelete.key + '.json',{method:'DELETE'});
+        await fe
