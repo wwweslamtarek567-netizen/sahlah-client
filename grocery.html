@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>البقالة - سهلة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+*{font-family:'Cairo';box-sizing:border-box;margin:0;padding:0}
+body{background:#f8f8f8}
+.box{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:90px}
+.header{height:70px;background:#ff6a00;display:flex;align-items:center;justify-content:space-between;padding:0 15px;color:#fff;border-radius:0 0 22px 22px}
+.header button{width:38px;height:38px;border:none;background:rgba(0,0,0,.2);border-radius:50%;color:#fff;font-size:20px;cursor:pointer}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:15px}
+.card{background:#fff;border-radius:18px;padding:10px;box-shadow:0 4px 12px rgba(0,0,0,.05);text-align:center}
+.card .icon{height:70px;background:#FFF6EC;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:32px}
+.card h4{margin:8px 0 6px;font-size:13px;font-weight:800;height:36px}
+.card input.qty{width:100%;border:1px solid #FFD6A8;background:#fff;border-radius:8px;padding:6px 8px;font-family:'Cairo';font-size:12px;font-weight:700;text-align:center;outline:none}
+.card button{width:100%;margin-top:8px;background:#FFF6EC;border:1px solid #FFD6A8;color:#ff6a00;border-radius:10px;padding:8px;font-weight:800;cursor:pointer;font-size:12px}
+.other-box{background:#fff;margin:15px;border-radius:18px;padding:12px;display:flex;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,.05);position:sticky;top:10px;z-index:10}
+.other-box input{flex:1;border:1px solid #ffd6a8;border-radius:10px;padding:10px;font-family:'Cairo';font-size:13px}
+.other-box button{background:#ff6a00;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:900;font-family:'Cairo';cursor:pointer}
+.cart-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;box-shadow:0 -2px 15px rgba(0,0,0,.08);padding:12px 15px;display:flex;justify-content:space-between;align-items:center}
+.cart-bar button{background:#ff6a00;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-weight:900;font-family:'Cairo';cursor:pointer}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="header">
+    <div style="font-weight:900;font-size:18px;">🛒 قسم البقالة</div>
+    <button onclick="history.back()">›</button>
+  </div>
+
+  <div class="other-box">
+    <input id="otherInput" placeholder="اطلب شيء آخر... مثال: علبة تونة">
+    <button onclick="addOther()">إضافة للسلة</button>
+  </div>
+
+  <div class="grid" id="grocGrid"></div>
+</div>
+
+<div class="cart-bar">
+  <div>السلة: <b id="count">0</b> منتج</div>
+  <button onclick="goCart()">عرض السلة 🛒</button>
+</div>
+
+<script>
+const groceries = [
+  {id:101,name:'رز',emoji:'🍚'},
+  {id:102,name:'سكر',emoji:'🧂'},
+  {id:103,name:'مكرونة',emoji:'🍝'},
+  {id:104,name:'زيت',emoji:'🫙'},
+  {id:105,name:'سمنة',emoji:'🧈'},
+  {id:106,name:'شاي',emoji:'🍵'},
+  {id:107,name:'ملح',emoji:'🧂'},
+  {id:108,name:'دقيق',emoji:'🌾'},
+  {id:109,name:'عدس',emoji:'🟤'},
+  {id:110,name:'فول',emoji:'🫘'},
+  {id:111,name:'صلصة',emoji:'🥫'},
+  {id:112,name:'تونة',emoji:'🐟'},
+  {id:113,name:'جبنة',emoji:'🧀'},
+  {id:114,name:'بيض',emoji:'🥚'},
+  {id:115,name:'لبن',emoji:'🥛'},
+  {id:116,name:'شيبسي',emoji:'🥔'},
+  {id:117,name:'بسكوت',emoji:'🍪'},
+  {id:118,name:'مناديل',emoji:'🧻'},
+  {id:119,name:'صابون',emoji:'🧼'},
+  {id:120,name:'اريال',emoji:'🧴'},
+];
+
+function getCart(){ return JSON.parse(localStorage.getItem('sahla_cart') || '[]'); }
+function setCart(c){ localStorage.setItem('sahla_cart', JSON.stringify(c)); document.getElementById('count').innerText = c.length; }
+
+function render(){
+  document.getElementById('grocGrid').innerHTML = groceries.map(g=>`
+    <div class="card">
+      <div class="icon">${g.emoji}</div>
+      <h4>${g.name}</h4>
+      <input class="qty" id="qty-${g.id}" placeholder="الكمية - مثال: 2">
+      <button onclick="addToCart(${g.id})">+ إضافة للسلة</button>
+    </div>
+  `).join('');
+  document.getElementById('count').innerText = getCart().length;
+}
+
+function addToCart(id){
+  let item = groceries.find(g=>g.id==id);
+  let qty = document.getElementById('qty-'+id).value.trim();
+  if(!qty){ alert('اكتب الكمية الأول - مثال: 1 كيلو'); return; }
+  let cart = getCart();
+  cart.push({name: item.name + ' - ' + qty, type:'بقالة', id:item.id, qty: qty, baseName: item.name});
+  setCart(cart);
+  document.getElementById('qty-'+id).value = '';
+  alert('✅ اتضاف: ' + item.name + ' (' + qty + ')');
+}
+
+function addOther(){
+  let txt = document.getElementById('otherInput').value.trim();
+  if(!txt){ alert('اكتب اللي عايزه الاول'); return; }
+  let cart = getCart();
+  cart.push({name: txt, type:'بقالة - طلب خاص'});
+  setCart(cart);
+  document.getElementById('otherInput').value='';
+  alert('تمت الاضافة للسلة: ' + txt);
+}
+
+function goCart(){
+  if(getCart().length==0){ alert('السلة فاضية ضيف حاجة الاول'); return; }
+  window.location.href='cart.html';
+}
+
+render();
+</script>
+</body>
+      </html>
