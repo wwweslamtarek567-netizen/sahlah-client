@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>سلة الطلبات - سهلة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="config.js"></script>
+<style>
+*{font-family:'Cairo';box-sizing:border-box;margin:0;padding:0}
+body{background:#f8f8f8}
+.box{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:180px}
+.header{height:70px;background:#ff6a00;display:flex;align-items:center;justify-content:space-between;padding:0 15px;color:#fff;border-radius:0 0 22px 22px}
+.header button{width:38px;height:38px;border:none;background:rgba(0,0,0,.2);border-radius:50%;color:#fff;font-size:20px;cursor:pointer}
+.items{padding:15px}
+.item{background:#fff;border-radius:16px;padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;box-shadow:0 3px 10px rgba(0,0,0,.05)}
+.item b{font-size:14px}
+.item small{color:#888}
+.del{color:#ff3b30;background:#ffeaea;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer}
+.summary{background:#fff;margin:15px;border-radius:18px;padding:15px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.row{display:flex;justify-content:space-between;margin:8px 0;font-weight:700}
+.row.total{font-size:18px;color:#ff6a00;border-top:1px dashed #eee;padding-top:10px}
+.loc-box{background:#eef6ff;border:1px dashed #6aaeff;border-radius:12px;padding:12px;margin-top:12px;text-align:center;font-weight:800;font-size:13px;color:#007aff}
+.btn-confirm{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);width:90%;max-width:450px;background:#00a651;color:#fff;border:none;border-radius:14px;padding:15px;font-family:'Cairo';font-size:18px;font-weight:900;display:flex;justify-content:center;align-items:center;gap:10px;cursor:pointer;box-shadow:0 6px 18px rgba(0,166,81,.3)}
+.btn-confirm:disabled{opacity:.6}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="header">
+    <div style="font-weight:900;font-size:18px;">🛒 سلة الطلبات</div>
+    <button onclick="history.back()">›</button>
+  </div>
+
+  <div class="items" id="cartItems"></div>
+
+  <div class="summary">
+    <div class="row"><span>عدد المنتجات</span><span id="count">0</span></div>
+    <div class="row"><span>سعر التوصيل (ثابت)</span><span>30 جنيه</span></div>
+    <div class="row total"><span>الإجمالي للدفع</span><span id="totalPrice">30 جنيه</span></div>
+    <div class="loc-box" id="locText"><i class="fa-solid fa-location-crosshairs"></i> سيتم تحديد موقعك الحالي عند تأكيد الطلب</div>
+  </div>
+</div>
+
+<button class="btn-confirm" id="confirmBtn" onclick="confirmOrder()"><i class="fa-solid fa-location-arrow"></i> تأكيد الطلب بموقعي الحالي</button>
+
+<script>
+const DELIVERY_FEE = 30;
+let cart = JSON.parse(localStorage.getItem('sahla_cart') || '[]');
+let myLat = null, myLng = null;
+
+function render(){
+  let box = document.getElementById('cartItems');
+  if(cart.length==0){
+    box.innerHTML = '<p style="text-align:center;color:#888;margin:30px">السلة فاضية</p>';
+  } else {
+    box.innerHTML = cart.map((c,i)=>`
+      <div class="item">
+        <div><b>${c.name}</b><br><small>${c.type||'منتج'} ${c.qty? ' - الكمية: '+c.qty : ''}</small></div>
+        <button class="del" onclick="removeItem(${i})"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    `).join('');
+  }
+  document.getElementById('count').innerText = cart.length;
+  document.getElementById('totalPrice').innerText = DELIVERY_FEE + ' جنيه';
+}
+
+function removeItem(i){
+  cart.splice(i,1);
+  localStorage.setItem('sahla_cart', JSON.stringify(cart));
+  render();
+}
+
+// تخلي كل صفحات المنتجات تضيف بالطريقة دي
+// localStorage.setItem('sahla_cart', JSON.stringify([...cart, {name:'طماطم', type:'خضروات'}]))
+
+async function confirmOrder(){
+  if(cart.length==0){ alert('السلة فاضية'); return; }
+  let clientPhone = localStorage.getItem('clientPhone');
+  if(!clientPhone){ alert('سجل دخول الاول'); location.href='register-client.html'; return; }
+
+  let btn = document.getElementById('confirmBtn');
+  let locText = document.getElementById('locText');
+  btn.disabled = true;
+  btn.innerHTML = 'جاري تحديد موقعك... ⏳';
+  locText.innerHTML = '⏳ جاري تحديد موقعك الحالي...';
+
+  try{
+    // 1- جيب الموقع الحالي
+    let pos = await new Promise((res,rej)=>{
+      if(!navigator.geolocation) rej(new Error('المتصفح لا يدعم GPS'));
+      navigator.geolocation.getCurrentPosition(res, (err)=>{
+        if(err.code==1) rej(new Error('لازم توافق على مشاركة الموقع'));
+        else rej(err);
+      }, {enableHighAccuracy:true, timeout:15000, maximumAge:0});
+    });
+    myLat = pos.coords.latitude;
+    myLng = pos.coords.longitude;
+    locText.innerHTML = `✅ تم تحديد موقعك<br>📍 ${myLat.toFixed(5)}, ${myLng.toFixed(5)}`;
+
+    // 2- هات اسم العميل
+    let clientRes = await fetch(DB_URL + '/clients/' + clientPhone + '.json?t=' + Date.now());
+    let client = await clientRes.json();
+    if(!client ||!client.name){
+      let allRes = await fetch(DB_URL + '/clients.json?t=' + Date.now());
+      let all = await allRes.json();
+      if(all){
+        if(Array.isArray(all)) client = all.find(c=> String(c.phone)==String(clientPhone));
+        else client = Object.values(all).find(c=> String(c.phone)==String(clientPhone)) || all[clientPhone];
+      }
+    }
+
+    // 3- كوّن الطلب - سعر التوصيل ثابت 30
+    let orderId = Date.now();
+    let orderData = {
+      id: orderId,
+      clientName: client?.name || localStorage.getItem('clientName') || 'عميل',
+      clientPhone: clientPhone,
+      phone: clientPhone,
+      clientAddress: client?.address || '',
+      address: client?.address || '',
+      // الموقع الحالي هو المهم للمندوب
+      lat: myLat,
+      lng: myLng,
+      clientLat: myLat,
+      clientLng: myLng,
+      latitude: myLat,
+      longitude: myLng,
+      location: {lat: myLat, lng: myLng},
+      items: cart,
+      itemsCount: cart.length,
+      total: DELIVERY_FEE,
+      deliveryFee: DELIVERY_FEE,
+      price: DELIVERY_FEE,
+      type: cart.map(c=>c.type).join(' + ') || 'طلب متنوع',
+      status: 'جديد',
+      createdAt: new Date().toISOString()
+    };
+
+    await fetch(DB_URL + '/orders/' + orderId + '.json', {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(orderData)
+    });
+
+    alert(`✅ تم تأكيد الطلب!\nسعر التوصيل: ${DELIVERY_FEE} جنيه\nرقم الطلب: ${orderId}`);
+    localStorage.removeItem('sahla_cart');
+    location.href='index.html';
+
+  }catch(e){
+    alert('❌ فشل تحديد الموقع:\n' + (e.message||e) + '\nفعل الـ GPS وحاول تاني');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-location-arrow"></i> تأكيد الطلب بموقعي الحالي';
+    locText.innerHTML = '⚠️ لم يتم تحديد الموقع';
+  }
+}
+
+render();
+</script>
+</body>
+  </html>
