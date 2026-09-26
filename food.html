@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>وجبات سريعة - سهلة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Cairo';background:#f7f7f7;padding:15px;padding-bottom:80px;}
+h2{margin:10px 0 15px 0;font-weight:800;}
+.option{background:white;padding:16px 18px;border-radius:14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px #0001;cursor:pointer;border:2px solid transparent;}
+.option.active{border-color:#ff6a00;background:#fff7f0;}
+.option .check{width:22px;height:22px;border-radius:50%;border:2px solid #ccc;display:flex;align-items:center;justify-content:center;}
+.option.active .check{background:#ff6a00;border-color:#ff6a00;color:white;}
+.btn{position:fixed;bottom:15px;left:15px;right:15px;background:#ff6a00;color:white;border:0;padding:14px;border-radius:14px;font-family:'Cairo';font-size:17px;font-weight:800;}
+</style>
+</head>
+<body>
+
+<h2>وجبات سريعة 🍔</h2>
+
+<div class="option" onclick="selectMeal(this,'كشري مصري 🍝')"><span>كشري مصري 🍝</span><div class="check">○</div></div>
+<div class="option" onclick="selectMeal(this,'طاجن مكرونة 🍲')"><span>طاجن مكرونة 🍲</span><div class="check">○</div></div>
+<div class="option" onclick="selectMeal(this,'سندوتش حواوشي 🫓')"><span>سندوتش حواوشي 🫓</span><div class="check">○</div></div>
+<div class="option" onclick="selectMeal(this,'سندوتش كبدة 🌯')"><span>سندوتش كبدة 🌯</span><div class="check">○</div></div>
+<div class="option" onclick="selectMeal(this,'سندوتش سجق 🌭')"><span>سندوتش سجق 🌭</span><div class="check">○</div></div>
+
+<button class="btn" onclick="addToMainCart()">إضافة للسلة</button>
+
+<script>
+// نفس نظام البقالة والصيدلية
+let selectedMeal = null;
+
+function selectMeal(el, name){
+  document.querySelectorAll('.option').forEach(o=>{
+    o.classList.remove('active');
+    o.querySelector('.check').innerHTML='○';
+  });
+  el.classList.add('active');
+  el.querySelector('.check').innerHTML='✓';
+  selectedMeal = name;
+}
+
+function addToMainCart(){
+  if(!selectedMeal){
+    alert('اختار وجبة الأول');
+    return;
+  }
+
+  // زي ما عاملين في البقالة - نفس المفتاح
+  let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+  
+  cart.push({
+    id: Date.now(),
+    name: selectedMeal,
+    category: 'food',
+    qty: 1,
+    note: ''
+  });
+
+  localStorage.setItem('cart', JSON.stringify(cart));
+
+  // يرجع للرئيسية والسلة هناك هتقراه
+  window.location.href = 'index.html';
+}
+</script>
+
+</body>
+  </html>
