@@ -62,7 +62,7 @@ async function render(){
   let courierBox = o.courier ? `<div class="card" style="border:2px solid #ff6a00"><b>مندوبك: ${o.courier.name}</b><br>رقمه: ${o.courier.phone}<br><a href="tel:${o.courier.phone}" class="btn call" style="display:block;text-align:center;text-decoration:none">📞 اتصال بالمندوب</a></div>` : `<div class="card">🔍 جاري البحث عن أقرب مندوب ليك...<br><small>اول ما مندوب يقبل من صفحة المندوب هيظهر هنا</small></div>`;
 
   let steps = [
-    {k:'جديد', t:'تم إرسال طلبك - بندور على مندوب'},
+    
     {k:'pending', t:'تم إرسال طلبك - بندور على مندوب'},
     {k:'accepted', t:'المندوب قبل الطلب وجاي يشتري'},
     {k:'purchased', t:'المندوب اشترى الحاجة ✓'},
