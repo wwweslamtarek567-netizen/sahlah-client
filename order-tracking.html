@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>تتبع طلبك</title>
+<script src="config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@800;900&display=swap" rel="stylesheet">
+<style>body{font-family:'Cairo';background:#f6f6f6;margin:0;padding:15px}.card{background:#fff;border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)}.dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center}.done{background:#0a9e3f;color:#fff}.active{background:#ff6a00;color:#fff;animation: pulse 1s infinite}.wait{background:#eee;color:#aaa} @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}.btn{width:100%;padding:14px;border-radius:12px;border:none;font-family:'Cairo';font-weight:900;cursor:pointer;margin-top:10px}</style>
+</head>
+<body>
+<div id="root">جاري تحميل طلبك...</div>
+<script>
+const orderId = new URLSearchParams(location.search).get('id') || localStorage.getItem('current_order_id');
+
+async function updateClientStats(type){
+  try{
+    let phone = localStorage.getItem('clientPhone');
+    if(!phone) return;
+    let res = await fetch(DB_URL+'/clients/'+phone+'.json');
+    let client = await res.json() || {};
+    if(type=='completed'){
+      client.completedOrders = (client.completedOrders||0)+1;
+      client.totalOrders = (client.totalOrders||0)+1;
+    }else if(type=='cancelled'){
+      client.cancelledOrders = (client.cancelledOrders||0)+1;
+      client.totalOrders = (client.totalOrders||0)+1;
+    }
+    await fetch(DB_URL+'/clients/'+phone+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(client)});
+    // للادمن كمان
+    await fetch(DB_URL+'/admin_stats.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[type]: (type=='completed'?'totalCompleted':'totalCancelled')})});
+  }catch(e){}
+}
+
+async function load(){
+  if(!orderId){document.getElementById('root').innerHTML='مفيش طلب'; return;}
+  let res = await fetch(DB_URL+'/orders/'+orderId+'.json'); let o = await res.json();
+  if(!o){document.getElementById('root').innerHTML='الطلب اتحذف او ملغي'; localStorage.removeItem('current_order_id'); return;}
+
+  let steps=[
+    {k:'pending', t:'تم إرسال طلبك - بندور على مندوب قريب'},
+    {k:'accepted', t:'المندوب قبل الطلب وجاي يشتري'},
+    {k:'purchased', t:'المندوب اشترى الحاجة ✓'},
+    {k:'on_the_way', t:'المندوب متجه إليك الآن 🏍️'},
+    {k:'delivered', t:'تم التسليم - شكرا لاستخدامك سهلة'},
+  ];
+  let curIdx = steps.findIndex(s=>s.k==o.status);
+
+  let htmlSteps = steps.map((s,i)=>{
+    let cls=i<curIdx?'done':i==curIdx?'active':'wait';
+    let icon=i<curIdx?'✓':i==curIdx?'●':'○';
+    return `<div style="display:flex;gap:12px;margin:14px 0;align-items:center"><div class="dot ${cls}">${icon}</div><div style="font-weight:800">${s.t}</div></div>`;
+  }).join('');
+
+  let courierBox='';
+  if(o.status=='pending'){ courierBox=`<div class="card" style="text-align:center">🔍 بنشوف أقرب مندوب ليك...<br><small>سيظهر هنا اول ما مندوب يقبل</small></div>`; }
+  else if(o.courier){ courierBox=`<div class="card" style="border:2px solid #ff6a00"><b>مندوبك: ${o.courier.name}</b><br>📞 ${o.courier.phone}<br><br><a href="tel:${o.courier.phone}" style="display:block;background:#25D366;color:#fff;text-align:center;padding:12px;border-radius:12px;text-decoration:none;font-weight:900">اتصال بالمندوب</a></div>`; }
+
+  let cancelledMsg = o.status=='cancelled'? `<div class="card" style="background:#ffe5e5;color:#a00;font-weight:800">تم إلغاء الطلب<br>السبب: ${o.cancelReason||''}</div>` : '';
+  let deliveredMsg = o.status=='delivered'? `<div class="card" style="background:#e8ffe8;color:#0a7d33;font-weight:800;text-align:center">✅ تم استلام الطلب بنجاح<br>شكرا ليك</div>` : '';
+
+  // الزرار الاخضر الجديد فوق الاحمر
+  let receivedBtn = (o.status!='delivered' && o.status!='cancelled')? `<button class="btn" style="background:#0a9e3f;color:#fff" onclick="confirmReceived()">✅ تم الاستلام</button>` : '';
+  let cancelBtn = (o.status!='delivered' && o.status!='cancelled')? `<button class="btn" style="background:#ffe5e5;color:#d00" onclick="cancelOrder()">إلغاء الطلب - اذكر السبب</button>` : '';
+
+  // لو الطلب خلص او اتلغى - اخفيه بعد 2 ثانية
+  if(o.status=='delivered' || o.status=='cancelled'){
+    setTimeout(()=>{ localStorage.removeItem('current_order_id'); },2000);
+  }
+
+  document.getElementById('root').innerHTML=`<div class="card"><b>طلب #${o.id.slice(-6)}</b>${htmlSteps}</div>${courierBox}${cancelledMsg}${deliveredMsg}<div class="card">${receivedBtn}${cancelBtn}</div>`;
+}
+
+async function cancelOrder(){
+  let reason=prompt('ليه عايز تلغي؟ اكتب السبب:');
+  if(!reason) return;
+  await fetch(DB_URL+'/orders/'+orderId+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled', cancelReason: reason})});
+  await updateClientStats('cancelled');
+  localStorage.removeItem('current_order_id');
+  alert('تم الغاء الطلب');
+  load();
+}
+
+async function confirmReceived(){
+  if(!confirm('متأكد انك استلمت الطلب؟')) return;
+  await fetch(DB_URL+'/orders/'+orderId+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'delivered', deliveredAt: new Date().toISOString()})});
+  await updateClientStats('completed');
+  localStorage.removeItem('current_order_id');
+  alert('شكرا ليك ❤️ تم تأكيد الاستلام');
+  window.location.href='index.html';
+}
+
+load(); setInterval(load,3000);
+</script>
+</body>
+  </html>
