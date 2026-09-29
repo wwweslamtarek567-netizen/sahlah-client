@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تتبع طلبك</title>
+<script src="config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Cairo',sans-serif}
+body{background:#f2f2f2;padding-bottom:100px}
+.header{background:#ff6a00;color:white;padding:15px;text-align:center;position:relative;font-weight:900;font-size:18px}
+.header.back{position:absolute;right:15px;top:18px;color:white;font-size:20px;cursor:pointer}
+.timer-box{margin:12px;background:white;border:2px dashed #ff6a00;border-radius:16px;padding:14px;text-align:center}
+.timer-box h2{color:#e60000;font-size:26px;font-weight:900}
+.timer-box p{font-size:13px;color:#555;margin-top:4px;font-weight:700}
+.card{background:white;margin:12px;border-radius:20px;padding:18px;box-shadow:0 4px 15px rgba(0,0,0,.06)}
+.order-id{font-weight:900;text-align:left;font-size:16px;margin-bottom:15px;direction:ltr}
+.step{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #f7f7f7}
+.step:last-child{border:0}
+.step.txt{font-weight:800;font-size:14px;flex:1}
+.step.circle{width:28px;height:28px;border-radius:50%;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:12px;color:#ddd;flex-shrink:0}
+.step.active.txt{color:#ff6a00}
+.step.active.circle{background:#ff6a00;border-color:#ff6a00;color:white;animation:pulse 1s infinite}
+.step.done.txt{color:#0a9e3f}
+.step.done.circle{background:#0a9e3f;border-color:#0a9e3f;color:white}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.search-box{background:white;margin:12px;border-radius:16px;padding:16px;text-align:center;font-weight:800;font-size:15px;color:#333;border:2px solid #ff6a00}
+#map{height:35vh;margin:12px;border-radius:18px;border:3px solid #ff6a00;display:none}
+.tabs{display:none;margin:12px;gap:8px}
+.tab{flex:1;padding:8px;border-radius:20px;text-align:center;font-weight:900;font-size:12px;cursor:pointer}
+.tab.active{background:#ff6a00;color:white}.tab.inactive{background:#0a9e3f;color:white}
+.rider-card{background:white;margin:12px;border-radius:18px;padding:12px;border:2px solid #ff6a00}
+.btn-orange{background:#ff6a00;color:white;border:none;border-radius:12px;padding:12px;font-weight:900;width:100%;cursor:pointer;margin-top:8px}
+.actions{background:white;margin:12px;border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.btn-green{background:#0a9e3f;color:white;border:none;border-radius:14px;padding:15px;font-weight:900;font-size:16px;cursor:pointer}
+.btn-red{background:#ffe6e6;color:#d00;border:none;border-radius:14px;padding:14px;font-weight:900;font-size:14px;cursor:pointer}
+.call-box{display:none;background:#111;color:white;border-radius:16px;margin:12px;padding:14px;text-align:center}
+.call-box a{color:#25d366;text-decoration:none;font-weight:900;font-size:18px;display:block;margin-top:8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <i class="fa-solid fa-arrow-right back" onclick="history.back()"></i>
+  تتبع طلبك
+</div>
+
+<div class="timer-box">
+  <h2 id="timer">05:00:00</h2>
+  <p>⏳ وقت انتهاء الطلب - لو مفيش مندوب الطلب هيتمسح</p>
+</div>
+
+<div class="card">
+  <div class="order-id">رقم الطلب: <span id="orderId">...</span></div>
+  <div class="step" id="s1"><div class="txt">تم ارسال طلبك - بندور على مندوب</div><div class="circle">•</div></div>
+  <div class="step" id="s2"><div class="txt">المندوب قبل الطلب وجاي يستلم الطرد</div><div class="circle"></div></div>
+  <div class="step" id="s3"><div class="txt">تم تسليم الطلب للمندوب ✓</div><div class="circle"></div></div>
+  <div class="step" id="s4"><div class="txt">🏍️ المندوب متجه الى تسليم الطلب</div><div class="circle"></div></div>
+  <div class="step" id="s5"><div class="txt">تم تسليم طلبك بنجاح</div><div class="circle"></div></div>
+</div>
+
+<div class="search-box" id="searchText">🔍 جاري البحث عن أقرب مندوب ليك...</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" id="tabOffers">0 مناديب قريبين منك</div>
+  <div class="tab inactive">موقعك الحالي</div>
+</div>
+<div id="map"></div>
+<div id="ridersList"></div>
+
+<div class="call-box" id="courierBox">
+  <div>المندوب: <b id="cName">-</b> - <span id="cPhoneText"></span></div>
+  <a id="cPhone" href="#">📞 اتصل بالمندوب</a>
+</div>
+
+<div class="actions">
+  <button class="btn-green" id="doneBtn" onclick="confirmDelivered()">✅ تم الاستلام</button>
+  <button class="btn-red" onclick="cancelOrder()">إلغاء الطلب - اذكر السبب</button>
+</div>
+
+<script>
+let orderId = new URLSearchParams(location.search).get('id') || localStorage.getItem('lastOrderId');
+if(!orderId){ alert('مفيش رقم طلب'); location.href='moto.html'; }
+document.getElementById('orderId').innerText = orderId;
+
+let map, markers=[], createdAt=null, timerInterval=null, orderCache=null;
+
+function initMap(lat,lng){
+  if(map) return;
+  map = L.map('map').setView([lat,lng],14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+}
+
+function startTimer(startTime){
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    let diff = (startTime + 5*60*60*1000) - Date.now();
+    if(diff<=0){ document.getElementById('timer').innerText='انتهى'; clearInterval(timerInterval); fetch(DB_URL+'/orders/'+orderId+'.json',{method:'DELETE'}); return; }
+    let h=String(Math.floor(diff/3600000)).padStart(2,'0'), m=String(Math.floor((diff%3600000)/60000)).padStart(2,'0'), s=String(Math.floor((diff%60000)/1000)).padStart(2,'0');
+    document.getElementById('timer').innerText = `${h}:${m}:${s}`;
+  },1000);
+}
+
+async function loadStatus(){
+  let r = await fetch(DB_URL+'/orders/'+orderId+'.json'); let o = await r.json(); if(!o) return; orderCache=o;
+  if(!createdAt && o.createdAt){ createdAt=o.createdAt; startTimer(createdAt); }
+  updateSteps(o.status||'pending');
+
+  // لو لسه مفيش مندوب مختار - اظهر العروض زي الفيديو
+  if(!o.courier){
+    let offers = o.offers? Object.values(o.offers) : [];
+    if(offers.length>0){
+      document.getElementById('map').style.display='block';
+      document.getElementById('tabs').style.display='flex';
+      document.getElementById('tabOffers').innerText = offers.length + ' مناديب قدموا عروض - اختار واحد من الخريطة';
+      document.getElementById('searchText').innerHTML = '🛵 '+offers.length+' مناديب قدموا عروض - اختار واحد من الخريطة<br><small>شوف الخريطة تحت</small>';
+      let plat = o.pickupLat||o.fromLat||30.04, plng=o.pickupLng||o.fromLng||31.23;
+      initMap(plat,plng);
+      markers.forEach(m=>map.removeLayer(m)); markers=[];
+      let list=document.getElementById('ridersList'); list.innerHTML='';
+      offers.forEach(off=>{
+        let mm=L.marker([off.lat,off.lng],{icon:L.divIcon({html:'<div style="background:#ff6a00;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white">🛵</div>',className:''})}).addTo(map); markers.push(mm);
+        let card=document.createElement('div'); card.className='rider-card';
+        card.innerHTML=`
+          <div style="display:flex;justify-content:space-between;font-weight:900"><span>🛵 ${off.name||'اسلام طارق'}</span><span>${off.distance||'0.0'} كم منك</span></div>
+          <div style="font-size:12px;margin:4px 0">رقمه: ${off.phone} - اجرة: ${off.fee||30}ج</div>
+          <button class="btn-orange" onclick="chooseRider('${off.phone}','${off.name||'مندوب'}')">اختار المندوب ده</button>
+        `;
+        list.appendChild(card);
+      });
+    } else {
+      document.getElementById('searchText').innerText='🔍 جاري البحث عن أقرب مندوب ليك...';
+    }
+  } else {
+    // مندوب مختار
+    document.getElementById('map').style.display='none';
+    document.getElementById('tabs').style.display='none';
+    document.getElementById('ridersList').innerHTML='';
+    document.getElementById('courierBox').style.display='block';
+    document.getElementById('cName').innerText=o.courierName||'المندوب';
+    document.getElementById('cPhoneText').innerText=o.courierPhone||'';
+    document.getElementById('cPhone').href='tel:'+o.courierPhone;
+    document.getElementById('searchText').innerText='المندوب '+o.courierName+' متجه اليك الآن 🛵';
+    document.getElementById('doneBtn').style.display='block';
+  }
+}
+
+function updateSteps(status){
+  let mapS={pending:1, assigned:2, accepted:2, picked:3, on_the_way:4, in_delivery:4, delivered:5};
+  let cur=mapS[status]||1;
+  for(let i=1;i<=5;i++){
+    let el=document.getElementById('s'+i); el.className='step';
+    let circle=el.querySelector('.circle');
+    if(i<cur){ el.classList.add('done'); circle.innerHTML='✓'; }
+    else if(i==cur){ el.classList.add('active'); circle.innerHTML='•'; }
+    else{ circle.innerHTML=''; }
+  }
+}
+
+async function chooseRider(phone,name){
+  if(!confirm('تأكيد اختيار '+name+'؟')) return;
+  await fetch(DB_URL+'/orders/'+orderId+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({courier:phone,courierName:name,courierPhone:phone,status:'accepted'})});
+  loadStatus();
+}
+async function confirmDelivered(){
+  await fetch(DB_URL+'/orders/'+orderId+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'delivered'})});
+  alert('شكرا - تم تأكيد الاستلام'); location.href='index.html';
+}
+async function cancelOrder(){
+  let reason=prompt('سبب الإلغاء:'); if(!reason) return;
+  await fetch(DB_URL+'/orders/'+orderId+'.json',{method:'DELETE'}); location.href='index.html';
+}
+
+loadStatus(); setInterval(loadStatus,4000);
+</script>
+</body>
+  </html>
