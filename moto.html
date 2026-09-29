@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>طلب توصيل - سهلة</title>
+<script src="config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+body{margin:0;font-family:'Cairo';background:#f7f7f7;padding-bottom:100px}
+.header{background:#ff6a00;color:white;padding:15px;text-align:center;position:relative}
+.header .back{position:absolute;right:15px;top:18px;color:white;font-size:20px;cursor:pointer}
+.logo{font-weight:900;font-size:18px}
+.map-wrap{position:relative;margin:15px;border-radius:18px;overflow:hidden;border:2px solid #ff6a00;height:280px}
+#map{height:100%;width:100%}
+.dist-badge{position:absolute;top:10px;left:10px;z-index:999;background:#ff6a00;color:white;padding:6px 14px;border-radius:20px;font-weight:900;font-size:13px}
+.card{background:white;margin:12px 15px;padding:15px;border-radius:18px;box-shadow:0 3px 12px rgba(0,0,0,.06)}
+.input-group{margin:10px 0}
+.input-group label{font-weight:800;font-size:13px;display:block;margin-bottom:5px}
+.input-group input, .input-group textarea{width:100%;padding:12px;border:1px solid #eee;border-radius:12px;font-family:'Cairo';font-size:14px;box-sizing:border-box}
+.input-group textarea{height:70px;resize:none}
+.loc-btn{background:#fff3e0;color:#ff6a00;border:1px dashed #ff6a00;padding:8px 12px;border-radius:20px;font-weight:800;font-size:12px;cursor:pointer;margin-top:5px;display:inline-block}
+.fee-box{background:#e8f5e9;border:2px solid #4caf50;border-radius:15px;padding:12px;display:flex;justify-content:space-between;align-items:center;margin:15px}
+.btn-order{background:#ff6a00;color:white;border:none;width:90%;margin:10px 5%;padding:16px;border-radius:30px;font-family:'Cairo';font-weight:900;font-size:16px;cursor:pointer}
+.row2{display:flex;gap:10px}
+.row2 .input-group{flex:1}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <i class="fa-solid fa-arrow-right back" onclick="history.back()"></i>
+  <div class="logo">📦 توصيل من شخص لشخص</div>
+</div>
+
+<div class="map-wrap">
+  <div id="map"></div>
+  <div class="dist-badge" id="distText">حدد مكان الاستلام والتسليم</div>
+</div>
+
+<div class="card">
+  <div class="input-group">
+    <label>📍 مكان الاستلام - من فين؟</label>
+    <input id="fromAddress" placeholder="مثال: شارع الجامعة، بدر">
+    <span class="loc-btn" onclick="useMyLocation('from')"><i class="fa-solid fa-location-crosshairs"></i> استخدم موقعي الحالي للاستلام</span>
+  </div>
+  <div class="input-group">
+    <label>🏁 مكان التسليم - لفين؟</label>
+    <input id="toAddress" placeholder="مثال: الحي المتميز، بدر">
+    <span class="loc-btn" onclick="useMyLocation('to')"><i class="fa-solid fa-location-crosshairs"></i> استخدم موقعي الحالي للتسليم</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row2">
+    <div class="input-group">
+      <label>اسم المستلم</label>
+      <input id="receiverName" placeholder="اسم اللي هيستلم">
+    </div>
+    <div class="input-group">
+      <label>رقم المستلم</label>
+      <input id="receiverPhone" type="tel" placeholder="01xxxxxxxxx">
+    </div>
+  </div>
+  <div class="row2">
+    <div class="input-group">
+      <label>نوع الطرد</label>
+      <input id="packageDesc" placeholder="مثال: اوراق، مفاتيح، اكل...">
+    </div>
+    <div class="input-group">
+      <label>الوزن (اختياري)</label>
+      <input id="weight" placeholder="مثال: 2 كيلو">
+    </div>
+  </div>
+  <div class="input-group">
+    <label>ملاحظات للمندوب</label>
+    <textarea id="notes" placeholder="مثال: الطرد قابل للكسر، اتصل قبل الوصول..."></textarea>
+  </div>
+</div>
+
+<div class="fee-box">
+  <div><i class="fa-solid fa-road"></i> المسافة: <b id="km">0</b> كم</div>
+  <div style="font-weight:900;color:#0a9e3f;font-size:18px"><span id="fee">0</span> جنيه</div>
+</div>
+
+<button class="btn-order" onclick="sendOrder()"><i class="fa-solid fa-motorcycle"></i> اطلب مندوب توصيل الآن</button>
+
+<script>
+let map, fromMarker, toMarker, routeLine;
+let fromLat=null, fromLng=null, toLat=null, toLng=null;
+
+function initMap(){
+  map = L.map('map').setView([30.146, 31.714], 12); // بدر
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  map.on('click', function(e){
+    if(!fromLat){
+      setFrom(e.latlng.lat, e.latlng.lng);
+    }else if(!toLat){
+      setTo(e.latlng.lat, e.latlng.lng);
+    }
+  });
+}
+function setFrom(lat,lng, addr){
+  fromLat=lat; fromLng=lng;
+  if(fromMarker) map.removeLayer(fromMarker);
+  let icon = L.divIcon({html:'<div style="background:#0a9e3f;color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:900;border:2px solid white">A</div>',className:'',iconSize:[32,32]});
+  fromMarker = L.marker([lat,lng],{icon}).addTo(map).bindPopup('مكان الاستلام').openPopup();
+  if(addr) document.getElementById('fromAddress').value=addr;
+  else reverseGeocode(lat,lng,'fromAddress');
+  drawRoute();
+}
+function setTo(lat,lng, addr){
+  toLat=lat; toLng=lng;
+  if(toMarker) map.removeLayer(toMarker);
+  let icon = L.divIcon({html:'<div style="background:#d00;color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:900;border:2px solid white">B</div>',className:'',iconSize:[32,32]});
+  toMarker = L.marker([lat,lng],{icon}).addTo(map).bindPopup('مكان التسليم').openPopup();
+  if(addr) document.getElementById('toAddress').value=addr;
+  else reverseGeocode(lat,lng,'toAddress');
+  drawRoute();
+}
+function calcKm(lat1,lon1,lat2,lon2){
+  let R=6371; let dLat=(lat2-lat1)*Math.PI/180; let dLon=(lon2-lon1)*Math.PI/180;
+  let a=Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function drawRoute(){
+  if(fromLat && toLat){
+    if(routeLine) map.removeLayer(routeLine);
+    routeLine = L.polyline([[fromLat,fromLng],[toLat,toLng]], {color:'#ff6a00', weight:5, dashArray:'10,10'}).addTo(map);
+    let km = calcKm(fromLat,fromLng,toLat,toLng);
+    document.getElementById('km').innerText=km.toFixed(1);
+    document.getElementById('distText').innerText=km.toFixed(1)+' كم';
+    let fee = 25 + (km*4); // سعر التوصيل: 25 جنيه بداية + 4 لكل كيلو
+    if(fee<40) fee=40;
+    document.getElementById('fee').innerText=Math.round(fee);
+    map.fitBounds([[fromLat,fromLng],[toLat,toLng]], {padding:[40,40]});
+  }
+}
+async function reverseGeocode(lat,lng,inputId){
+  try{
+    let r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    let j = await r.json();
+    document.getElementById(inputId).value=j.display_name.substring(0,60);
+  }catch(e){}
+}
+async function useMyLocation(type){
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    let lat=pos.coords.latitude, lng=pos.coords.longitude;
+    if(type=='from') setFrom(lat,lng);
+    else setTo(lat,lng);
+  },()=>alert('فعل الـ GPS'));
+}
+
+async function sendOrder(){
+  let fromAddr=document.getElementById('fromAddress').value.trim();
+  let toAddr=document.getElementById('toAddress').value.trim();
+  let receiverName=document.getElementById('receiverName').value.trim();
+  let receiverPhone=document.getElementById('receiverPhone').value.trim();
+  let packageDesc=document.getElementById('packageDesc').value.trim();
+  if(!fromLat || !toLat) return alert('حدد مكان الاستلام والتسليم على الخريطة');
+  if(!receiverName || !receiverPhone) return alert('اكتب بيانات المستلم');
+  if(!packageDesc) return alert('اكتب نوع الطرد');
+
+  let fee = parseInt(document.getElementById('fee').innerText)||40;
+  let km = document.getElementById('km').innerText;
+
+  let clientPhone = localStorage.getItem('clientPhone') || localStorage.getItem('userPhone') || '0';
+  let clientName = localStorage.getItem('clientName') || 'عميل';
+
+  let order = {
+    id: Date.now(),
+    type: 'delivery',
+    isParcel: true,
+    deliveryType: 'p2p',
+    status: 'pending',
+    pickupAddress: fromAddr,
+    dropoffAddress: toAddr,
+    fromAddress: fromAddr,
+    toAddress: toAddr,
+    pickupLat: fromLat,
+    pickupLng: fromLng,
+    dropoffLat: toLat,
+    dropoffLng: toLng,
+    clientLat: fromLat,
+    clientLng: fromLng,
+    fromLat: fromLat,
+    fromLng: fromLng,
+    toLat: toLat,
+    toLng: toLng,
+    senderName: clientName,
+    senderPhone: clientPhone,
+    clientName: clientName,
+    clientPhone: clientPhone,
+    clientAddress: fromAddr,
+    receiverName: receiverName,
+    receiverPhone: receiverPhone,
+    packageDesc: packageDesc,
+    packageName: packageDesc,
+    weight: document.getElementById('weight').value,
+    notes: document.getElementById('notes').value,
+    distance: km+' كم',
+    total: fee,
+    fee: fee,
+    createdAt: Date.now(),
+    timestamp: Date.now(),
+    lat: fromLat,
+    lng: fromLng
+  };
+
+  try{
+    await fetch(DB_URL+'/orders.json', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(order)});
+    alert('✅ تم ارسال طلب التوصيل - المندوب هيتواصل معاك حالا');
+    window.location.href='client-orders.html';
+  }catch(e){ alert('خطأ في الارسال'); }
+}
+
+initMap();
+</script>
+</body>
+  </html>
