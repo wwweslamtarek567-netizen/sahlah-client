@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>توصيل من مكان لمكان - سهلة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+*{box-sizing:border-box;font-family:'Cairo',sans-serif;margin:0;padding:0}
+body{background:#f8f8f8;min-height:100vh;padding-bottom:90px}
+.top{background:#ff6a00;border-radius:0 0 28px 28px;padding:22px 20px 30px;text-align:center;color:white}
+.top h1{font-size:26px;font-weight:900}
+.top p{font-size:14px;margin-top:4px;opacity:.9}
+.container{padding:20px 15px;display:flex;flex-direction:column;gap:16px;margin-top:10px}
+.opt-card{background:white;border-radius:22px;padding:18px;display:flex;align-items:center;gap:14px;text-decoration:none;color:#111;box-shadow:0 6px 20px rgba(0,0,0,.06);border:2px solid #f2f2f2;transition:.15s}
+.opt-card:active{transform:scale(.97);border-color:#ff6a00}
+.icon-box{width:70px;height:70px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0}
+.opt-card:nth-child(1) .icon-box{background:#fff3e0;color:#ff6a00}
+.opt-card:nth-child(2) .icon-box{background:#e8f5e9;color:#0a9e3f}
+.txt b{display:block;font-size:17px;font-weight:900}
+.txt span{font-size:13px;color:#888;font-weight:700}
+.arrow{margin-right:auto;color:#ccc;font-size:18px}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>توصيل حاجة من مكان لمكان</h1>
+  <p>اختر اللي انت عايزه</p>
+</div>
+
+<div class="container">
+  <a class="opt-card" href="moto.html">
+    <div class="icon-box"><i class="fa-solid fa-motorcycle"></i></div>
+    <div class="txt">
+      <b>طلب توصيل من مكان لمكان</b>
+      <span>ابعت اوراق، مفاتيح، اكل، اي حاجة</span>
+    </div>
+    <i class="fa-solid fa-chevron-left arrow"></i>
+  </a>
+
+  <a class="opt-card" href="#" onclick="goTrack(); return false;">
+    <div class="icon-box"><i class="fa-solid fa-location-dot"></i></div>
+    <div class="txt">
+      <b>تتبع طلبك الحالي</b>
+      <span>شوف المندوب فين وكلمُه</span>
+    </div>
+    <i class="fa-solid fa-chevron-left arrow"></i>
+  </a>
+</div>
+
+<script>
+function goTrack(){
+  let id = localStorage.getItem('lastOrderId');
+  if(id){
+    location.href = 'track-parcel.html?id=' + id;
+  } else {
+    // لو مفيش طلب محفوظ قبل كده
+    if(confirm('مفيش طلب حالي، تحب تعمل طلب جديد؟')){
+      location.href = 'moto.html';
+    }
+  }
+}
+</script>
+
+</body>
+      </html>
