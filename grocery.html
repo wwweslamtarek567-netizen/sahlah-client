@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>البقالة - سهلة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+*{font-family:'Cairo';box-sizing:border-box;margin:0;padding:0}
+body{background:#f8f8f8}
+.box{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:90px}
+.header-empty{width:100%;height:120px;background:#fff;border-radius:0 0 22px 22px;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid #eee}
+.header-empty img{width:100%;height:100%;object-fit:cover;display:block}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px}
+.card{background:#fff;border-radius:18px;padding:8px 6px;box-shadow:0 4px 12px rgba(0,0,0,.05);text-align:center}
+.card .icon{height:80px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card .icon img{width:100%;height:100%;object-fit:contain;display:block}
+.card h4{margin:8px 0 6px;font-size:11px;font-weight:800;height:32px;display:flex;align-items:center;justify-content:center;line-height:1.2}
+.card input.qty{width:100%;border:none;background:#f1f1f1;border-radius:8px;padding:6px 6px;font-family:'Cairo';font-size:11px;font-weight:700;text-align:center;outline:none}
+.card button{width:100%;margin-top:6px;background:#ff6a00;border:none;color:#fff;border-radius:10px;padding:7px 2px;font-weight:800;cursor:pointer;font-size:11px}
+.other-box{background:#fff;margin:10px;border-radius:18px;padding:10px;display:flex;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,.05);position:sticky;top:10px;z-index:10}
+.other-box input{flex:1;border:1px solid #ffd6a8;border-radius:10px;padding:10px;font-family:'Cairo';font-size:12px;outline:none}
+.other-box button{background:#ff6a00;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:900;font-family:'Cairo';cursor:pointer;white-space:nowrap}
+.cart-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;box-shadow:0 -2px 15px rgba(0,0,0,.08);padding:12px 15px;display:flex;justify-content:space-between;align-items:center;border-radius:18px 18px 0 0}
+.cart-bar button{background:#ff6a00;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-weight:900;font-family:'Cairo';cursor:pointer}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="header-empty">
+    <img src="header.png" onerror="this.style.display='none'">
+  </div>
+
+  <div class="other-box">
+    <input id="otherInput" placeholder="اطلب أي منتج... مثال: بيبسي">
+    <button onclick="addOther()">إضافة للسلة</button>
+  </div>
+
+  <div class="grid" id="grocGrid"></div>
+</div>
+
+<div class="cart-bar">
+  <div>السلة: <b id="count">0</b> منتج</div>
+  <button onclick="goCart()">عرض السلة 🛒</button>
+</div>
+
+<script>
+const groceries = [
+  {id:101,name:'بيبسي ومشروبات'},
+  {id:102,name:'شيبسي ومقرمشات'},
+  {id:103,name:'بسكويت وحلويات'},
+  {id:104,name:'معلبات'},
+  {id:105,name:'ألبان ومنتجاتها'},
+  {id:106,name:'عصائر ومشروبات'},
+  {id:107,name:'منظفات'},
+  {id:108,name:'عناية شخصية'},
+  {id:109,name:'أرز ومكرونة وزيوت'},
+  {id:110,name:'بيض'},
+  {id:111,name:'بيراسول ورجون'},
+  {id:112,name:'أدوات أطفال'},
+  // الاضافات الجديدة
+  {id:113,name:'عدس'},
+  {id:114,name:'فاصوليا بيضاء'},
+  {id:115,name:'دقيق'},
+  {id:116,name:'ملح طعام'},
+  {id:117,name:'صلصه'},
+  {id:118,name:'اريال'},
+  {id:119,name:'برسيل'},
+  {id:120,name:'صابون بريحه'},
+  {id:121,name:'سمنه'},
+  {id:122,name:'شاى'},
+  {id:123,name:'سكر'},
+];
+
+function getCart(){ return JSON.parse(localStorage.getItem('sahla_cart') || '[]'); }
+function setCart(c){ localStorage.setItem('sahla_cart', JSON.stringify(c)); document.getElementById('count').innerText = c.length; }
+
+function render(){
+  document.getElementById('grocGrid').innerHTML = groceries.map(g=>`
+    <div class="card">
+      <div class="icon">
+        <img src="${g.name}.png" onerror="this.style.display='none'">
+      </div>
+      <h4>${g.name}</h4>
+      <input class="qty" id="qty-${g.id}" placeholder="الكمية - مثال: 2">
+      <button onclick="addToCart(${g.id})">+ إضافة للسلة</button>
+    </div>
+  `).join('');
+  document.getElementById('count').innerText = getCart().length;
+}
+
+function addToCart(id){
+  let item = groceries.find(g=>g.id==id);
+  let qty = document.getElementById('qty-'+id).value.trim();
+  if(!qty){ alert('اكتب الكمية الأول - مثال: 2'); return; }
+  let cart = getCart();
+  cart.push({name: item.name + ' - ' + qty, type:'بقالة', id:item.id, qty: qty, baseName: item.name});
+  setCart(cart);
+  document.getElementById('qty-'+id).value = '';
+}
+
+function addOther(){
+  let txt = document.getElementById('otherInput').value.trim();
+  if(!txt){ alert('اكتب اللي عايزه الاول'); return; }
+  let cart = getCart();
+  cart.push({name: txt, type:'بقالة - طلب خاص'});
+  setCart(cart);
+  document.getElementById('otherInput').value='';
+}
+
+function goCart(){
+  if(getCart().length==0){ alert('السلة فاضية ضيف حاجة الاول'); return; }
+  window.location.href='cart.html';
+}
+render();
+</script>
+</body>
+                          </html>
