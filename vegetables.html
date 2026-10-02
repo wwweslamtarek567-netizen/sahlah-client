@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قسم الخضروات</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo',sans-serif}
+body{background:#f5f5f5;padding-bottom:90px}
+.header{background:#ff8c00;color:#fff;padding:12px 14px 16px;border-radius:0 0 18px 18px}
+.header .mid{display:flex;justify-content:space-between;align-items:center}
+.header .back{width:42px;height:42px;background:#7a3d00;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none}
+.search{padding:12px;display:flex;gap:10px}
+.search .box{flex:1;background:#fff;border:1.5px solid #e0e0e0;border-radius:12px;display:flex;align-items:center;padding:0 14px}
+.search .box input{border:none;outline:none;width:100%;padding:12px 10px;font-size:14px;text-align:right}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 8px}
+.card{background:#fff;border-radius:12px;overflow:hidden;border:1px solid #eee;text-align:center}
+.card .img{width:100%;aspect-ratio:1;background:#fff}
+.card .img img{width:100%;height:100%;object-fit:cover;display:block}
+.card h3{font-size:11px;font-weight:900;margin:6px 0 4px}
+.card .qty{width:92%;margin:0 auto 6px;border:1px solid #ddd;border-radius:8px;padding:6px 4px;font-size:10px;text-align:center;font-weight:700;outline:none}
+.card .btn{background:#ff6a00;color:#fff;border:none;width:95%;margin:0 auto 6px;padding:7px 2px;border-radius:20px;font-size:8.5px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:3px}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e0e0e0;padding:10px;display:flex;justify-content:space-between;align-items:center;z-index:999}
+.bottom .cart{background:#ff6a00;color:#fff;border:none;padding:12px 22px;border-radius:25px;font-weight:900;font-size:14px;display:flex;align-items:center;gap:8px}
+</style>
+</head>
+<body>
+<div class="header"><div class="mid"><div style="font-weight:900">🥬 قسم الخضروات</div><a href="index.html" class="back"><i class="fa-solid fa-chevron-right"></i></a></div></div>
+<div class="search"><div class="box"><i class="fa-solid fa-magnifying-glass" style="color:#999"></i><input id="search" placeholder="ابحث عن منتج ..."></div></div>
+<div class="grid" id="grid"></div>
+<div class="bottom">
+<div style="font-weight:900;font-size:13px">السلة: <span id="count">0</span> منتج</div>
+<button class="cart" onclick="window.location.href='cart.html'"><i class="fa-solid fa-cart-shopping"></i> عرض السلة</button>
+</div>
+
+<script>
+// كل الصور من نفس المصدر ومضمونة
+const products=[
+{name:"بصل",unit:"مثال: 2 كيلو",img:"https://images.unsplash.com/photo-1508747703725-719777637510?w=300"},
+{name:"بطاطس",unit:"مثال: 1 كيلو",img:"https://images.unsplash.com/photo-1518977676608-bd36c2ca4f9d?w=300"},
+{name:"خيار",unit:"مثال: 1 كيلو",img:"https://images.unsplash.com/photo-1589621316382-008455b857cd?w=300"},
+{name:"طماطم",unit:"1 كيلو",img:"https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=300"},
+{name:"جزر",unit:"مثال: 1 كيلو",img:"https://images.unsplash.com/photo-1447175008436-054170c2e979?w=300"},
+{name:"فلفل أخضر",unit:"مثال: نص كيلو",img:"https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=300"},
+{name:"فلفل أحمر",unit:"مثال: نص كيلو",img:"https://images.unsplash.com/photo-1526470498-9ae73c665de8?w=300"},
+{name:"باذنجان",unit:"مثال: 1 كيلو",img:"https://images.unsplash.com/photo-1574629810367-424bf2a38c1a?w=300"},
+{name:"ملفوف",unit:"مثال: 1 واحدة",img:"https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=300"},
+{name:"قرنبيط",unit:"مثال: 1 واحدة",img:"https://images.unsplash.com/photo-1615484477778-ca3b7795899d?w=300"},
+{name:"بقدونس",unit:"مثال: 2 حزمة",img:"https://images.unsplash.com/photo-1601055903647-ddf1ee9701b7?w=300"},
+{name:"خس",unit:"مثال: 1 واحدة",img:"https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300"},
+{name:"بقدونس",unit:"مثال: 1 حزمة",img:"https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300"},
+{name:"ملفوف",unit:"مثال: 1 واحدة",img:"https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=300"},
+{name:"فاصوليا",unit:"مثال: 1 كيلو",img:"https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=300"},
+{name:"بامية",unit:"مثال: 1 كيلو",img:"https://images.unsplash.com/photo-1589923188900-85dae523342b?w=300"},
+{name:"بنجر",unit:"مثال: 1 كيلو",img:"https://images.unsplash.com/photo-1593106916961-33d08cc2a3d7?w=300"},
+{name:"كوسة",unit:"مثال: 1 كيلو",img:"https://images.unsplash.com/photo-1597362925123-77861d3fbac7?w=300"},
+{name:"ذرة",unit:"مثال: 3 حبات",img:"https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=300"},
+{name:"ثوم",unit:"مثال: ربع كيلو",img:"https://images.unsplash.com/photo-1587049332317-d324a3f81d5e?w=300"},
+];
+
+let cart = JSON.parse(localStorage.getItem('sahla_cart')||'[]');
+document.getElementById('count').textContent=cart.length;
+const grid=document.getElementById('grid');
+
+function render(list){
+ grid.innerHTML="";
+ list.forEach(p=>{
+  let d=document.createElement('div'); d.className='card';
+  d.innerHTML=`<div class="img"><img src="${p.img}" loading="lazy"></div><h3>${p.name}</h3><input class="qty" placeholder="${p.unit}"><button class="btn"><i class="fa-solid fa-cart-shopping"></i> إضافة للسلة +</button>`;
+  let btn=d.querySelector('.btn');
+  let inp=d.querySelector('.qty');
+  btn.onclick=()=>{
+    let q=inp.value.trim(); if(!q) q=inp.placeholder;
+    cart.push({name:p.name, qty:q, img:p.img});
+    localStorage.setItem('sahla_cart', JSON.stringify(cart));
+    document.getElementById('count').textContent=cart.length;
+    btn.innerHTML='✓ تمت الإضافة'; btn.style.background='#2e7d32';
+    setTimeout(()=>{btn.innerHTML='<i class="fa-solid fa-cart-shopping"></i> إضافة للسلة +'; btn.style.background='#ff6a00'},1200);
+  };
+  grid.appendChild(d);
+ });
+}
+render(products);
+document.getElementById('search').addEventListener('input',e=>{render(products.filter(x=>x.name.includes(e.target.value)))});
+</script>
+</body>
+  </html>
