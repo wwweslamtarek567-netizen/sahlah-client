@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قسم الخضروات</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo',sans-serif}
+body{background:#f5f5f5;padding-bottom:90px}
+.top-header{background:#ff8a00;padding:10px 15px 22px;color:#fff;display:flex;align-items:center;justify-content:space-between;border-radius:0 0 20px 20px;position:sticky;top:0;z-index:10}
+.top-header .back{width:38px;height:38px;background:rgba(0,0,0,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none}
+.top-header h1{font-size:20px;font-weight:900}
+.search-row{display:flex;gap:8px;padding:12px 15px;background:#fff;margin-top:-10px}
+.search-row .add-btn{background:#ff6a00;color:#fff;border:none;padding:0 22px;border-radius:12px;font-weight:900;font-size:15px}
+.search-row .search-box{flex:1;background:#fff;border:1.5px solid #eee;border-radius:12px;display:flex;align-items:center;padding:0 12px}
+.search-box input{border:none;outline:none;width:100%;padding:10px;font-size:14px;text-align:right}
+.filters{display:flex;gap:8px;padding:0 12px 12px;overflow-x:auto;white-space:nowrap;background:#fff}
+.filters::-webkit-scrollbar{display:none}
+.filters button{border:none;background:#f0f0f0;padding:7px 16px;border-radius:20px;font-size:13px;font-weight:700;color:#555}
+.filters button.active{background:#ff6a00;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}
+@media(min-width:500px){.grid{grid-template-columns:repeat(4,1fr)}}
+.card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid #f0f0f0;text-align:center;padding-bottom:8px}
+.card .img{width:100%;height:95px;overflow:hidden;background:#f9f9f9}
+.card .img img{width:100%;height:100%;object-fit:cover;display:block}
+.card h3{font-size:14px;font-weight:900;margin:7px 0 2px;color:#222}
+.card .price{font-size:12px;color:#666;font-weight:700;margin-bottom:6px}
+.card .price span{color:#ff6a00;font-weight:900}
+.card .add{margin:0 8px;background:#ff6a00;color:#fff;border:none;width:calc(100% - 16px);padding:6px;border-radius:20px;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer}
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;padding:10px 15px;z-index:20}
+.bottom-bar .cart-btn{background:#ff6a00;color:#fff;border:none;padding:10px 22px;border-radius:24px;font-weight:900;font-size:14px;display:flex;align-items:center;gap:8px}
+</style>
+</head>
+<body>
+
+<div class="top-header">
+  <a class="back" href="index.html"><i class="fa-solid fa-chevron-right"></i></a>
+  <h1>🥬 قسم الخضروات</h1>
+  <div style="display:flex;gap:12px;font-size:20px"><i class="fa-solid fa-share-nodes"></i><i class="fa-regular fa-bell"></i></div>
+</div>
+
+<div class="search-row">
+  <div class="search-box"><i class="fa-solid fa-magnifying-glass" style="color:#999"></i><input placeholder="ابحث عن منتج ..."></div>
+  <button class="add-btn">إضافة</button>
+</div>
+
+<div class="filters">
+  <button>أعشاب</button>
+  <button>خضروات ورقية</button>
+  <button>خضروات ثمرية</button>
+  <button>خضروات جذرية</button>
+  <button class="active">الكل</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="bottom-bar">
+  <div style="font-weight:900">السلة: <span id="count">0</span> منتج</div>
+  <button class="cart-btn"><i class="fa-solid fa-cart-shopping"></i> عرض السلة</button>
+</div>
+
+<script>
+const items = [
+{name:'طماطم',price:'12 جنيه / كيلو',p:12,img:'https://images.unsplash.com/photo-1561136594-7f68413baa99?w=300'},
+{name:'خيار',price:'10 جنيه / كيلو',p:10,img:'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300'},
+{name:'بطاطس',price:'10 جنيه / كيلو',p:10,img:'https://images.unsplash.com/photo-1518977676608-bd36c2ca4f9d?w=300'},
+{name:'بصل',price:'8 جنيه / كيلو',p:8,img:'https://images.unsplash.com/photo-1508747703725-719777637510?w=300'},
+{name:'جزر',price:'8 جنيه / كيلو',p:8,img:'https://images.unsplash.com/photo-1447175008436-054170c2e979?w=300'},
+{name:'فلفل أخضر',price:'10 جنيه / كيلو',p:10,img:'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=300'},
+{name:'فلفل أحمر',price:'18 جنيه / كيلو',p:18,img:'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=300'},
+{name:'باذنجان',price:'12 جنيه / كيلو',p:12,img:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=300'},
+{name:'ملفوف',price:'10 جنيه / كيلو',p:10,img:'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=300'},
+{name:'قرنبيط',price:'15 جنيه / كيلو',p:15,img:'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=300'},
+{name:'خس',price:'10 جنيه / كيلو',p:10,img:'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300'},
+{name:'بقدونس',price:'5 جنيه / حزمة',p:5,img:'https://images.unsplash.com/photo-1601055903647-ddf1ee9701b7?w=300'},
+{name:'نعناع',price:'5 جنيه / حزمة',p:5,img:'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300'},
+{name:'فاصوليا خضراء',price:'15 جنيه / كيلو',p:15,img:'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=300'},
+{name:'بامية',price:'20 جنيه / كيلو',p:20,img:'https://images.unsplash.com/photo-1608198093002-ad4e005484ec?w=300'},
+{name:'بنجر',price:'10 جنيه / كيلو',p:10,img:'https://images.unsplash.com/photo-1593106916961-33d08cc2a3d7?w=300'},
+{name:'كوسة',price:'12 جنيه / كيلو',p:12,img:'https://images.unsplash.com/photo-1597362925123-77861d3fbac7?w=300'},
+{name:'بصل أخضر',price:'8 جنيه / حزمة',p:8,img:'https://images.unsplash.com/photo-1587049352851-8d4e89133924?w=300'},
+{name:'ذرة',price:'8 جنيه / حبة',p:8,img:'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=300'},
+{name:'ثوم',price:'25 جنيه / كيلو',p:25,img:'https://images.unsplash.com/photo-1587049332317-d324a3f81d5e?w=300'},
+];
+let cart=0;
+const grid=document.getElementById('grid');
+items.forEach(it=>{
+  const d=document.createElement('div');
+  d.className='card';
+  d.innerHTML=`<div class="img"><img src="${it.img}" loading="lazy"></div><h3>${it.name}</h3><div class="price"><span>${it.price.split(' ')[0]}</span> ${it.price.replace(it.price.split(' ')[0],'')}</div><button class="add"><i class="fa-solid fa-cart-shopping"></i> إضافة للسلة +</button>`;
+  d.querySelector('.add').onclick=()=>{cart++;document.getElementById('count').textContent=cart};
+  grid.appendChild(d);
+});
+</script>
+</body>
+  </html>
