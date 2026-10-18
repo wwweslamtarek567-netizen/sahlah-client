@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خدمة العملاء - سهلة</title>
+<script src="config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+*{box-sizing:border-box;font-family:'Cairo',sans-serif}
+body{margin:0;background:#f0f2f5;display:flex;flex-direction:column;height:100vh;height:100dvh}
+.top{background:#ff6a00;color:white;padding:12px 15px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.messages{flex:1;overflow-y:auto;padding:12px 10px;display:flex;flex-direction:column;gap:8px;background:#ece5dd url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');background-size:400px}
+.msg{max-width:78%;padding:8px 12px;border-radius:12px;font-size:14px;font-weight:700;line-height:1.4;position:relative;word-break:break-word}
+.msg.client{align-self:flex-end;background:#dcf8c6;border-bottom-right-radius:2px;color:#111}
+.msg.admin{align-self:flex-start;background:white;border-bottom-left-radius:2px;color:#111;box-shadow:0 1px 1px rgba(0,0,0,.1)}
+.msg .time{font-size:10px;color:#888;margin-top:4px;text-align:left;display:block}
+.inputBar{background:white;padding:8px;display:flex;align-items:center;gap:8px;border-top:1px solid #eee}
+.inputBar input{flex:1;border:none;background:#f0f0f0;border-radius:25px;padding:12px 16px;font-size:14px;font-weight:700;outline:none}
+.inputBar button{background:#ff6a00;color:white;border:none;width:45px;height:45px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.inputBar button:disabled{opacity:.5}
+.empty{text-align:center;margin-top:60px;color:#888;font-weight:800}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div onclick="history.back()" style="cursor:pointer"><i class="fa-solid fa-arrow-right"></i></div>
+  <div style="text-align:center;flex:1">
+    <div style="font-weight:900;font-size:16px">خدمة العملاء - سهلة</div>
+    <div style="font-size:11px;opacity:.9">نرد عليك في أسرع وقت</div>
+  </div>
+  <div style="width:20px"></div>
+</div>
+
+<div id="messages" class="messages">
+  <div class="empty">⏳ جاري تحميل المحادثة...</div>
+</div>
+
+<div class="inputBar">
+  <input id="txt" type="text" placeholder="اكتب شكوتك أو اقتراحك هنا..." onkeypress="if(event.key==='Enter')send()">
+  <button id="sendBtn" onclick="send()"><i class="fa-solid fa-paper-plane"></i></button>
+</div>
+
+<script>
+const phone = localStorage.getItem('clientPhone');
+const name = localStorage.getItem('clientName') || localStorage.getItem('userName') || phone || 'عميل';
+if(!phone){ location.href='register-client.html'; }
+
+const CHAT_URL = DB_URL + '/support/' + phone;
+
+async function loadMessages(){
+  try{
+    const res = await fetch(CHAT_URL + '/messages.json?t='+Date.now());
+    const data = await res.json();
+    const box = document.getElementById('messages');
+    if(!data){ box.innerHTML = '<div class="empty">👋 اهلا بيك<br><span style="font-size:13px;font-weight:400">اكتب أول رسالة وهنرد عليك حالا</span></div>'; return; }
+    const msgs = Object.values(data).sort((a,b)=>a.timestamp-b.timestamp);
+    box.innerHTML = '';
+    msgs.forEach(m=>{
+      const d = document.createElement('div');
+      d.className = 'msg ' + (m.sender==='client' ? 'client' : 'admin');
+      const time = new Date(m.timestamp).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+      d.innerHTML = `${m.text}<span class="time">${time} ${m.sender==='client'?'✓✓':''}</span>`;
+      box.appendChild(d);
+    });
+    box.scrollTop = box.scrollHeight;
+    // علم رسائل الادمن انها مقروءة
+    await fetch(CHAT_URL + '/info.json', {method:'PATCH', body:JSON.stringify({unreadClient:0})});
+  }catch(e){}
+}
+
+async function send(){
+  const input = document.getElementById('txt');
+  const text = input.value.trim();
+  if(!text) return;
+  document.getElementById('sendBtn').disabled=true;
+  const msg = {sender:'client', text:text, timestamp:Date.now(), phone:phone, name:name};
+  try{
+    await fetch(CHAT_URL + '/messages.json', {method:'POST', body:JSON.stringify(msg), headers:{'Content-Type':'application/json'}});
+    await fetch(CHAT_URL + '/info.json', {method:'PUT', body:JSON.stringify({phone:phone, name:name, lastMessage:text, updatedAt:Date.now(), unreadAdmin:(await getUnreadAdmin())+1, unreadClient:0}), headers:{'Content-Type':'application/json'}});
+    input.value='';
+    loadMessages();
+  }catch(e){ alert('مشكلة في الارسال'); }
+  document.getElementById('sendBtn').disabled=false;
+}
+
+async function getUnreadAdmin(){
+  try{ const r=await fetch(CHAT_URL+'/info.json'); const d=await r.json(); return d?.unreadAdmin||0; }catch{ return 0; }
+}
+
+loadMessages();
+setInterval(loadMessages,3000);
+</script>
+</body>
+  </html>
