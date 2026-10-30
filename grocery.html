@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>البقالة - سهلة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+*{font-family:'Cairo';box-sizing:border-box;margin:0;padding:0}
+body{background:#000}
+.box{max-width:480px;margin:0 auto;height:100vh;background:#000;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.header{height:60px;background:#fff;border-radius:0 0 22px 22px;overflow:hidden;flex-shrink:0}
+.header img{width:100%;height:100%;object-fit:cover}
+
+/* السوبر ماركت */
+.mall-area{flex:1;position:relative;overflow:hidden;background:#000}
+.mall-bg{
+  position:absolute;inset:0;
+  background-image:url('baqala-bg.jpg');
+  background-size:cover;
+  background-position:center 60%;
+  transition:all .4s ease;
+  transform-origin:center 70%;
+}
+.mall-bg.zoom{transform:scale(1.35) translateY(80px)}
+
+/* رفوف حقيقية فوق الصورة */
+.rack{position:absolute;top:0;bottom:38%;width:50%;z-index:3;padding:10px 6px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.rack.left{left:0;transform:perspective(400px) rotateY(15deg)}
+.rack.right{right:0;transform:perspective(400px) rotateY(-15deg)}
+.rack::-webkit-scrollbar{display:none}
+.item{
+  background:#fff;border-radius:10px;padding:4px 3px;text-align:center;
+  box-shadow:0 4px 10px rgba(0,0,0,.4);border:2px solid transparent;
+  touch-action:none;cursor:grab;transition:.15s;
+}
+.item:active{scale:1.15;border-color:#ff6a00;z-index:10}
+.item img{width:32px;height:32px;object-fit:contain;margin:auto;display:block}
+.item b{font-size:7px;display:block;line-height:1.1;height:16px;overflow:hidden}
+
+/* السلة اللي بتتحرك بجد */
+.cart-real{
+  position:absolute;bottom:18%;left:50%;transform:translateX(-50%);
+  width:92%;height:45%;z-index:8;
+  background-image:url('cart.png');
+  background-size:100% 100%;
+  background-repeat:no-repeat;
+  transition:left .35s cubic-bezier(.34,1.56,.64,1), transform .35s;
+  filter:drop-shadow(0 8px 15px rgba(0,0,0,.6));
+  touch-action:none;
+}
+.cart-real.go-left{left:22%;transform:translateX(-50%) rotate(-6deg)}
+.cart-real.go-right{left:78%;transform:translateX(-50%) rotate(6deg)}
+.cart-real.over{filter:drop-shadow(0 0 20px #ff6a00) brightness(1.15);scale:1.05}
+.cart-inside{position:absolute;bottom:30%;left:16%;right:16%;height:35%;display:flex;flex-wrap:wrap;gap:3px;justify-content:center;pointer-events:none}
+.cart-inside span{background:#ff6a00;color:#fff;font-size:7px;padding:2px 5px;border-radius:8px;font-weight:900}
+
+/* ازرار التحكم زي الصورة بالظبط */
+.ctrl{
+  position:absolute;bottom:0;left:0;right:0;z-index:20;
+  padding:10px 10px 14px;
+  background:linear-gradient(to top, rgba(0,0,0,.95) 40%, transparent);
+  display:flex;flex-direction:column;gap:8px;align-items:center;
+}
+.ctrl-row{display:flex;gap:12px;align-items:center}
+.ctrl button{
+  width:62px;height:62px;border-radius:18px;border:3px solid #fff;
+  background:#ff6a00;color:#fff;font-size:24px;font-weight:900;
+  box-shadow:0 5px 15px rgba(0,0,0,.6);cursor:pointer;
+}
+.ctrl button:active{scale:.9}
+.ctrl button.mid{width:56px;height:56px;background:#fff;color:#000;font-size:20px}
+.ctrl .up{width:64px;height:64px}
+.ctrl .order{width:96%;height:48px;background:#fff;color:#ff6a00;font-size:13px;border:none;border-radius:14px}
+
+.top-info{position:absolute;top:10px;left:10px;right:10px;z-index:15;display:flex;justify-content:space-between}
+.top-info div{background:rgba(0,0,0,.6);color:#fff;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:800;backdrop-filter:blur(4px)}
+.top-info .c{background:#ff6a00}
+
+.hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#ff6a00;color:#fff;padding:8px 16px;border-radius:20px;font-weight:900;display:none;z-index:25;pointer-events:none}
+
+.other{position:absolute;top:50px;left:8px;right:8px;z-index:12;background:#fff;border-radius:12px;padding:6px;display:flex;gap:6px}
+.other input{flex:1;border:1px solid #ffd6a8;border-radius:8px;padding:7px;font-size:11px;outline:none}
+.other button{background:#ff6a00;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-weight:900;font-size:11px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="header"><img src="eslam.png" onerror="this.style.display='none'"></div>
+  <div class="mall-area">
+    <div class="mall-bg" id="mallBg"></div>
+    
+    <div class="rack left" id="rackL"></div>
+    <div class="rack right" id="rackR"></div>
+
+    <div class="other">
+      <input id="otherInput" placeholder="اطلب أي منتج... مثال: بيبسي">
+      <button onclick="addOther()">إضافة</button>
+    </div>
+    <div class="top-info"><div>قسم البقالة</div><div class="c">السلة: <b id="count">0</b></div></div>
+
+    <div class="cart-real" id="cartReal"><div class="cart-inside" id="cartInside"></div></div>
+    <div class="hint" id="hint">سيب في السلة 🛒</div>
+
+    <div class="ctrl">
+      <div class="ctrl-row"><button class="up" onclick="goForward()">⬆️</button></div>
+      <div class="ctrl-row">
+        <button onclick="moveCart('right')">➡️</button>
+        <button class="mid" onclick="moveCart('center')">●</button>
+        <button onclick="moveCart('left')">⬅️</button>
+      </div>
+      <div class="ctrl-row" style="width:100%"><button class="order" onclick="goCart()">عرض السلة - طلب توصيل 🚚</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const groceries=[
+  {id:101,name:'بيبسي ومشروبات'},{id:102,name:'شيبسي ومقرمشات'},{id:103,name:'بسكويت وحلويات'},
+  {id:104,name:'معلبات'},{id:105,name:'ألبان ومنتجاتها'},{id:106,name:'عصائر ومشروبات'},
+  {id:107,name:'منظفات'},{id:108,name:'عناية شخصية'},{id:109,name:'أرز ومكرونة وزيوت'},
+  {id:110,name:'بيض'},{id:111,name:'بيراسول ورجون'},{id:112,name:'أدوات أطفال'},
+  {id:113,name:'عدس وفاصوليا'},{id:114,name:'مربى'},{id:115,name:'دقيق'},{id:116,name:'ملح طعام'},
+  {id:117,name:'صلصه'},{id:118,name:'خل'},{id:119,name:'مياه معدنيه'},{id:120,name:'صابون بريحه'},
+  {id:121,name:'سمنه'},{id:122,name:'شاى'},{id:123,name:'سكر'},
+];
+function getCart(){return JSON.parse(localStorage.getItem('sahla_cart')||'[]')}
+function setCart(c){
+  localStorage.setItem('sahla_cart',JSON.stringify(c));
+  document.getElementById('count').innerText=c.length;
+  document.getElementById('cartInside').innerHTML=c.slice(-6).map(x=>`<span>${x.baseName}</span>`).join('');
+}
+function renderRacks(){
+  let l=document.getElementById('rackL'),r=document.getElementById('rackR');l.innerHTML='';r.innerHTML='';
+  groceries.forEach((g,i)=>{
+    let d=document.createElement('div');d.className='item';d.dataset.id=g.id;
+    d.innerHTML=`<img src="${g.name}.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3081/3081986.png'"><b>${g.name}</b>`;
+    d.addEventListener('pointerdown',startDrag);
+    (i%2?r:l).appendChild(d);
+  });
+}
+let dragId=null,ghost=null;
+function startDrag(e){
+  dragId=this.dataset.id;
+  ghost=this.cloneNode(true);
+  ghost.style.position='fixed';ghost.style.zIndex=9999;ghost.style.pointerEvents='none';ghost.style.opacity=.95;ghost.style.transform='scale(1.4)';ghost.style.border='2px solid #ff6a00';ghost.style.borderRadius='10px';
+  document.body.appendChild(ghost);moveGhost(e);
+  this.setPointerCapture(e.pointerId);
+  this.addEventListener('pointermove',moveGhost);
+  this.addEventListener('pointerup',endDrag);
+}
+function moveGhost(e){
+  if(!ghost)return;
+  ghost.style.left=(e.clientX-35)+'px';ghost.style.top=(e.clientY-35)+'px';
+  let cart=document.getElementById('cartReal').getBoundingClientRect();
+  let over=e.clientX>cart.left&&e.clientX<cart.right&&e.clientY>cart.top&&e.clientY<cart.bottom;
+  document.getElementById('cartReal').classList.toggle('over',over);
+  document.getElementById('hint').style.display=over?'block':'none';
+}
+function endDrag(e){
+  let cart=document.getElementById('cartReal').getBoundingClientRect();
+  let over=e.clientX>cart.left&&e.clientX<cart.right&&e.clientY>cart.top&&e.clientY<cart.bottom;
+  if(over&&dragId) addToCart(parseInt(dragId));
+  if(ghost) ghost.remove();ghost=null;
+  document.getElementById('cartReal').classList.remove('over');
+  document.getElementById('hint').style.display='none';
+  this.removeEventListener('pointermove',moveGhost);
+}
+function addToCart(id){
+  let it=groceries.find(x=>x.id==id);
+  let q=prompt(`كمية ${it.name}؟`,'1')||'1';
+  let c=getCart();c.push({name:it.name+' - '+q,type:'بقالة',id:it.id,qty:q,baseName:it.name});
+  setCart(c);
+  document.getElementById('cartReal').animate([{transform:'translateX(-50%) scale(1)'},{transform:'translateX(-50%) scale(1.12)'},{transform:'translateX(-50%) scale(1)'}],{duration:300});
+}
+function addOther(){
+  let t=document.getElementById('otherInput').value.trim();
+  if(!t){alert('اكتب اللي عايزه');return}
+  let c=getCart();c.push({name:t,type:'بقالة - طلب خاص',baseName:t});
+  setCart(c);document.getElementById('otherInput').value='';
+}
+function moveCart(dir){
+  let cart=document.getElementById('cartReal');
+  cart.classList.remove('go-left','go-right');
+  if(dir=='left') cart.classList.add('go-left');
+  if(dir=='right') cart.classList.add('go-right');
+  if(dir!='center') setTimeout(()=>cart.classList.remove('go-left','go-right'),700);
+}
+function goForward(){
+  let bg=document.getElementById('mallBg');
+  bg.classList.add('zoom');
+  setTimeout(()=>bg.classList.remove('zoom'),700);
+}
+function goCart(){if(!getCart().length){alert('السلة فاضية');return}location.href='cart.html'}
+renderRacks();setCart(getCart());
+</script>
+</body>
+  </html>
