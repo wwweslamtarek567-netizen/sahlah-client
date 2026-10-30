@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>البقالة - سوبر ماركت سهلة 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+*{font-family:'Cairo';box-sizing:border-box;margin:0;padding:0}
+body{background:#111}
+.box{max-width:480px;margin:0 auto;height:100vh;background:#f5f1e8;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.header-empty{width:100%;height:60px;background:#fff;border-radius:0 0 22px 22px;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:30;border:1px solid #eee}
+.header-empty img{width:100%;height:100%;object-fit:cover}
+
+/* المول الافتراضي */
+.mall{flex:1;position:relative;background:linear-gradient(to bottom, #e8e0d0 0%, #f5f1e8 15%, #e8ddd0 45%, #d9d0c0 100%);overflow:hidden;perspective:700px}
+.floor{position:absolute;bottom:-10%;left:-30%;right:-30%;height:70%;background:repeating-linear-gradient(90deg, #e9e0d0 0, #e9e0d0 90px, #cbbfae 90px, #cbbfae 91px), linear-gradient(to bottom, #f0e6d5, #b8a88f);transform:rotateX(65deg);transform-origin:bottom}
+
+/* رفوف */
+.aisle{position:absolute;top:0;bottom:0;width:47%;z-index:4;display:flex;flex-direction:column;gap:0;padding:0}
+.aisle.left{left:0;transform:rotateY(22deg);transform-origin:left}
+.aisle.right{right:0;transform:rotateY(-22deg);transform-origin:right}
+.shelf-row{flex:1;background:linear-gradient(to bottom, #ffffff, #f2f2f2);border:2px solid #c9c9c9;margin:3px 0;border-radius:10px;display:flex;gap:5px;padding:5px;overflow-x:auto;align-items:center;box-shadow:0 4px 10px rgba(0,0,0,.18)}
+.shelf-row::-webkit-scrollbar{display:none}
+
+/* المنتج بصورته الحقيقية من عندك */
+.prod-card{
+  min-width:72px;max-width:72px;background:#fff;border-radius:12px;padding:4px 3px;text-align:center;
+  box-shadow:0 3px 8px rgba(0,0,0,.22);border:2px solid transparent;cursor:grab;touch-action:none;transition:.15s;flex-shrink:0;
+}
+.prod-card:active{transform:scale(1.25) translateZ(40px);border-color:#ff6a00;z-index:50}
+.prod-card .icon{height:46px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:8px;background:#fff}
+.prod-card .icon img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+.prod-card b{font-size:7.5px;line-height:1.1;height:20px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+
+/* السلة الافتراضية */
+.v-cart{position:absolute;bottom:20%;left:50%;transform:translateX(-50%);width:82%;height:30%;z-index:12;transition:left .4s cubic-bezier(.34,1.56,.64,1)}
+.v-cart.left{left:24%}
+.v-cart.right{left:76%}
+.v-cart-body{width:100%;height:100%;position:relative}
+.v-basket{position:absolute;inset:8% 5% 18% 5%;background:repeating-linear-gradient(90deg, transparent 0 12px, #444 12px 14px), repeating-linear-gradient(0deg, transparent 0 12px, #444 12px 14px), #e5e5e5;border:4px solid #222;border-radius:10px 10px 18px 18px;display:flex;flex-wrap:wrap;gap:3px;padding:6px;align-content:flex-start;overflow:hidden;transition:.2s}
+.v-basket.over{border-color:#ff6a00;box-shadow:0 0 0 5px #ff6a00, 0 0 25px #ff6a00}
+.v-handle{position:absolute;top:0;left:-6%;right:-6%;height:14px;background:#ff6a00;border-radius:20px;border:3px solid #222}
+.v-wheels{position:absolute;bottom:0;left:8%;right:8%;display:flex;justify-content:space-between}
+.v-wheels i{width:16px;height:16px;background:#222;border-radius:50%;border:2px solid #555;display:block}
+.v-basket span{background:#ff6a00;color:#fff;font-size:7px;padding:2px 5px;border-radius:8px;font-weight:900;animation:pop .3s}
+@keyframes pop{from{scale:0}to{scale:1}}
+
+/* تحكم */
+.top-info{position:absolute;top:6px;left:8px;right:8px;z-index:16;display:flex;justify-content:space-between}
+.top-info div{background:rgba(0,0,0,.55);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800}
+.top-info .c{background:#ff6a00}
+.other-box{position:absolute;top:42px;left:8px;right:8px;z-index:16;background:#fff;border-radius:12px;padding:6px;display:flex;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.other-box input{flex:1;border:1px solid #ffd6a8;border-radius:8px;padding:7px;font-size:11px;outline:none}
+.other-box button{background:#ff6a00;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-weight:900;font-size:11px;cursor:pointer}
+
+.controls{position:absolute;bottom:0;left:0;right:0;z-index:20;background:linear-gradient(to top, rgba(0,0,0,.92), transparent);padding:8px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.row{display:flex;gap:10px;align-items:center}
+.row button{width:56px;height:56px;border-radius:16px;border:2px solid #fff;background:#ff6a00;color:#fff;font-size:22px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.5)}
+.row button:active{scale:.9}
+.row button.mid{width:50px;height:50px;background:#fff;color:#000;font-size:18px}
+.row .order{width:94vw;max-width:460px;height:44px;background:#fff;color:#ff6a00;font-size:13px;border:none;border-radius:12px;font-weight:900}
+
+.hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#ff6a00;color:#fff;padding:8px 16px;border-radius:20px;font-weight:900;display:none;z-index:25;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="header-empty"><img src="eslam.png" onerror="this.style.display='none'"></div>
+  <div class="mall" id="mall">
+    <div class="floor"></div>
+    <div class="aisle left" id="aisleL"></div>
+    <div class="aisle right" id="aisleR"></div>
+
+    <div class="top-info"><div>اسحب من الرف للسلة</div><div class="c">السلة: <b id="count">0</b></div></div>
+    <div class="other-box">
+      <input id="otherInput" placeholder="اطلب أي منتج... مثال: بيبسي">
+      <button onclick="addOther()">إضافة</button>
+    </div>
+
+    <div class="v-cart" id="vCart">
+      <div class="v-cart-body">
+        <div class="v-handle"></div>
+        <div class="v-basket" id="vBasket"></div>
+        <div class="v-wheels"><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+    <div class="hint" id="hint">سيب هنا في السلة 🛒</div>
+
+    <div class="controls">
+      <div class="row"><button onclick="zoomMall()">⬆️</button></div>
+      <div class="row">
+        <button onclick="moveCart('right')">➡️</button>
+        <button class="mid" onclick="moveCart('center')">●</button>
+        <button onclick="moveCart('left')">⬅️</button>
+      </div>
+      <div class="row"><button class="order" onclick="goCart()">عرض السلة - طلب توصيل 🚚</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const groceries=[
+  {id:101,name:'بيبسي ومشروبات'},{id:102,name:'شيبسي ومقرمشات'},{id:103,name:'بسكويت وحلويات'},
+  {id:104,name:'معلبات'},{id:105,name:'ألبان ومنتجاتها'},{id:106,name:'عصائر ومشروبات'},
+  {id:107,name:'منظفات'},{id:108,name:'عناية شخصية'},{id:109,name:'أرز ومكرونة وزيوت'},
+  {id:110,name:'بيض'},{id:111,name:'بيراسول ورجون'},{id:112,name:'أدوات أطفال'},
+  {id:113,name:' عدس وفاصوليا'},{id:114,name:'مربى'},{id:115,name:'دقيق'},{id:116,name:'ملح طعام'},
+  {id:117,name:'صلصه'},{id:118,name:'خل'},{id:119,name:'مياه معدنيه'},{id:120,name:'صابون بريحه'},
+  {id:121,name:'سمنه'},{id:122,name:'شاى'},{id:123,name:'سكر'},
+];
+function getCart(){return JSON.parse(localStorage.getItem('sahla_cart')||'[]')}
+function setCart(c){
+  localStorage.setItem('sahla_cart',JSON.stringify(c));
+  document.getElementById('count').innerText=c.length;
+  document.getElementById('vBasket').innerHTML=c.slice(-10).map(x=>`<span>${(x.baseName||x.name).trim()}</span>`).join('');
+}
+function buildShelves(){
+  let l=document.getElementById('aisleL'),r=document.getElementById('aisleR');
+  for(let i=0;i<5;i++){
+    let sl=document.createElement('div');sl.className='shelf-row';
+    let sr=document.createElement('div');sr.className='shelf-row';
+    l.appendChild(sl);r.appendChild(sr);
+  }
+  let rows=document.querySelectorAll('.shelf-row');
+  groceries.forEach((g,i)=>{
+    let row=rows[i%rows.length];
+    let card=document.createElement('div');card.className='prod-card';card.dataset.id=g.id;
+    // هنا بنستخدم صورك الحقيقية اللي على GitHub
+    card.innerHTML=`<div class="icon"><img src="${g.name.trim()}.png" onerror="this.src='${g.name.replace(/^\s+/, '').trim()}.png'; this.onerror=()=>{this.src='https://cdn-icons-png.flaticon.com/512/3081/3081986.png'}"></div><b>${g.name.trim()}</b>`;
+    card.addEventListener('pointerdown',startDrag);
+    row.appendChild(card);
+  });
+}
+let dragId=null,ghost=null;
+function startDrag(e){
+  dragId=this.dataset.id;
+  ghost=this.cloneNode(true);
+  ghost.style.position='fixed';ghost.style.zIndex=9999;ghost.style.pointerEvents='none';ghost.style.opacity=.95;
+  ghost.style.transform='scale(1.5)';ghost.style.boxShadow='0 12px 25px rgba(0,0,0,.5)';ghost.style.border='2px solid #ff6a00';
+  document.body.appendChild(ghost);moveGhost(e);
+  this.setPointerCapture(e.pointerId);
+  this.addEventListener('pointermove',moveGhost);
+  this.addEventListener('pointerup',endDrag);
+}
+function moveGhost(e){
+  if(!ghost)return;
+  ghost.style.left=(e.clientX-36)+'px';ghost.style.top=(e.clientY-36)+'px';
+  let b=document.getElementById('vBasket').getBoundingClientRect();
+  let over=e.clientX>b.left&&e.clientX<b.right&&e.clientY>b.top&&e.clientY<b.bottom;
+  document.getElementById('vBasket').classList.toggle('over',over);
+  document.getElementById('hint').style.display=over?'block':'none';
+}
+function endDrag(e){
+  let b=document.getElementById('vBasket').getBoundingClientRect();
+  let over=e.clientX>b.left&&e.clientX<b.right&&e.clientY>b.top&&e.clientY<b.bottom;
+  if(over&&dragId) addToCart(parseInt(dragId));
+  if(ghost) ghost.remove();ghost=null;
+  document.getElementById('vBasket').classList.remove('over');
+  document.getElementById('hint').style.display='none';
+  this.removeEventListener('pointermove',moveGhost);
+}
+function addToCart(id){
+  let it=groceries.find(x=>x.id==id);
+  let qty=prompt(`كمية ${it.name.trim()}؟`,'1')||'1';
+  let c=getCart();c.push({name:it.name.trim()+' - '+qty,type:'بقالة',id:it.id,qty:qty,baseName:it.name.trim()});
+  setCart(c);
+  document.getElementById('vCart').animate([{transform:'translateX(-50%) scale(1)'},{transform:'translateX(-50%) scale(1.1)'},{transform:'translateX(-50%) scale(1)'}],{duration:300});
+}
+function addOther(){
+  let t=document.getElementById('otherInput').value.trim();
+  if(!t){alert('اكتب اللي عايزه الاول');return}
+  let c=getCart();c.push({name:t,type:'بقالة - طلب خاص',baseName:t});
+  setCart(c);document.getElementById('otherInput').value='';
+}
+function moveCart(dir){
+  let cart=document.getElementById('vCart');
+  cart.classList.remove('left','right');
+  if(dir=='left') cart.classList.add('left');
+  if(dir=='right') cart.classList.add('right');
+  if(dir!='center') setTimeout(()=>cart.classList.remove('left','right'),700);
+}
+function zoomMall(){
+  let mall=document.getElementById('mall');
+  mall.animate([{transform:'scale(1)'},{transform:'scale(1.15)'},{transform:'scale(1)'}],{duration:500});
+}
+function goCart(){if(!getCart().length){alert('السلة فاضية');return}window.location.href='cart.html'}
+buildShelves();setCart(getCart());
+</script>
+</body>
+  </html>
