@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>البقالة - سوبر ماركت سهلة 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+*{font-family:'Cairo';box-sizing:border-box;margin:0;padding:0}
+body{background:#f8f8f8;touch-action:none;overscroll-behavior:none}
+.box{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:90px;position:relative}
+.header-empty{width:100%;height:70px;background:#fff;border-radius:0 0 22px 22px;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid #eee}
+.header-empty img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* شريط البحث */
+.other-box{background:#fff;margin:10px;border-radius:18px;padding:10px;display:flex;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,.05);position:sticky;top:10px;z-index:20}
+.other-box input{flex:1;border:1px solid #ffd6a8;border-radius:10px;padding:10px;font-family:'Cairo';font-size:12px;outline:none}
+.other-box button{background:#ff6a00;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:900;cursor:pointer}
+
+/* السوبر ماركت 3D */
+.supermarket{
+  margin:10px;
+  height: 520px;
+  background: url('https://i.ibb.co/6yQ3ZJx/super-3d.jpg') center/cover no-repeat, linear-gradient(#ddd,#fff);
+  background-image: url('super-baqala.jpg');
+  border-radius:22px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 8px 20px rgba(0,0,0,.12);
+  border:2px solid #fff;
+  perspective:800px;
+}
+.supermarket::before{
+  content:'البقالة';
+  position:absolute;top:14px;left:50%;transform:translateX(-50%);
+  background:#ff6a00;color:#fff;padding:6px 22px;border-radius:12px;font-weight:900;font-size:18px;
+  box-shadow:0 4px 10px rgba(0,0,0,.2);z-index:5
+}
+.aisle-bg{
+  position:absolute;inset:0;
+  background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmNWY1ZjUiLz48L3N2Zz4=') center/cover;
+  background-image: linear-gradient(to bottom, #e8e8e8 0%, #fff 40%, #f3ece0 100%);
+}
+.shelves{display:flex;justify-content:space-between;position:absolute;top:60px;bottom:110px;left:0;right:0;padding:0 6px;gap:6px}
+.shelf-side{flex:1;background:rgba(255,255,255,.7);border-radius:14px;backdrop-filter:blur(4px);border:1px solid #fff;display:flex;flex-direction:column;gap:8px;padding:8px;overflow-y:auto}
+.shelf-title{font-size:10px;font-weight:900;color:#ff6a00;text-align:center}
+
+/* المنتج قابل للسحب */
+.product-drag{
+  background:#fff;border-radius:12px;padding:6px 4px;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,.08);
+  cursor:grab;touch-action:none;user-select:none;transition:.15s;
+  border:2px solid transparent;
+}
+.product-drag:active{transform:scale(1.08) rotate(2deg);border-color:#ff6a00;z-index:10}
+.product-drag img{width:40px;height:40px;object-fit:contain;display:block;margin:0 auto 4px}
+.product-drag b{font-size:9px;line-height:1.1;display:block;height:22px;overflow:hidden}
+
+/* السلة اللي بتتحرك */
+.cart-3d{
+  position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  width:170px;height:95px;
+  background: url('data:image/svg+xml;utf8,<svg></svg>');
+  background-color:#2b2b2b;
+  border-radius:12px 12px 8px 8px;
+  border:3px solid #444;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:900;font-size:13px;
+  box-shadow:0 10px 20px rgba(0,0,0,.3);
+  z-index:15;
+  touch-action:none;
+  transition: box-shadow .2s;
+}
+.cart-3d.drag-over{box-shadow:0 0 0 4px #ff6a00, 0 15px 25px rgba(0,0,0,.4);transform:translateX(-50%) scale(1.05)}
+.cart-3d::after{content:'⬅️ اسحب السلة يمين وشمال ➡️';position:absolute;top:-22px;left:50%;transform:translateX(-50%);background:#000;color:#fff;font-size:8px;padding:3px 8px;border-radius:20px;white-space:nowrap;opacity:.7}
+.cart-inner{pointer-events:none;text-align:center}
+#cartPreview{font-size:10px;color:#ffb46e;max-height:30px;overflow:hidden}
+
+.controls{display:flex;justify-content:space-between;padding:6px 12px;gap:8px}
+.controls button{flex:1;background:#fff;border:1px solid #ffd6a8;border-radius:10px;padding:8px;font-weight:800;font-size:11px}
+
+/* شريط السلة */
+.cart-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;box-shadow:0 -2px 15px rgba(0,0,0,.08);padding:12px 15px;display:flex;justify-content:space-between;align-items:center;border-radius:18px 18px 0 0;z-index:30}
+.cart-bar button{background:#ff6a00;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-weight:900;cursor:pointer}
+.cart-bar button#deliveryBtn{display:none;background:#111}
+.cart-bar button#deliveryBtn.show{display:block;animation:pop .3s}
+@keyframes pop{0%{transform:scale(.8)}100%{transform:scale(1)}}
+.drop-hint{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);background:rgba(255,106,0,.9);color:#fff;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:800;display:none;z-index:16}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="header-empty"><img src="eslam.png" onerror="this.style.display='none'"></div>
+
+  <div class="other-box">
+    <input id="otherInput" placeholder="اطلب أي منتج... مثال: بيبسي">
+    <button onclick="addOther()">إضافة للسلة</button>
+  </div>
+
+  <div class="supermarket" id="market">
+    <div class="aisle-bg"></div>
+    <div class="shelves">
+      <div class="shelf-side" id="leftShelf"></div>
+      <div class="shelf-side" id="rightShelf"></div>
+    </div>
+    <div class="drop-hint" id="dropHint">سيب المنتج هنا في السلة 🛒</div>
+    <div class="cart-3d" id="movingCart">
+      <div class="cart-inner">
+        🛒 السلة
+        <div id="cartPreview"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="moveCart(-40)">◀️ شمال</button>
+    <button onclick="centerCart()">📍 في النص</button>
+    <button onclick="moveCart(40)">يمين ▶️</button>
+  </div>
+</div>
+
+<div class="cart-bar">
+  <div>السلة: <b id="count">0</b> منتج</div>
+  <div style="display:flex;gap:8px">
+    <button id="deliveryBtn" onclick="goCart()">🚚 طلب توصيل</button>
+    <button onclick="goCart()">عرض السلة 🛒</button>
+  </div>
+</div>
+
+<script>
+const groceries = [
+  {id:101,name:'بيبسي ومشروبات'},{id:102,name:'شيبسي ومقرمشات'},{id:103,name:'بسكويت وحلويات'},
+  {id:104,name:'معلبات'},{id:105,name:'ألبان ومنتجاتها'},{id:106,name:'عصائر ومشروبات'},
+  {id:107,name:'منظفات'},{id:108,name:'عناية شخصية'},{id:109,name:'أرز ومكرونة وزيوت'},
+  {id:110,name:'بيض'},{id:111,name:'بيراسول ورجون'},{id:112,name:'أدوات أطفال'},
+  {id:113,name:'عدس وفاصوليا'},{id:114,name:'مربى'},{id:115,name:'دقيق'},{id:116,name:'ملح طعام'},
+  {id:117,name:'صلصه'},{id:118,name:'خل'},{id:119,name:'مياه معدنيه'},{id:120,name:'صابون بريحه'},
+  {id:121,name:'سمنه'},{id:122,name:'شاى'},{id:123,name:'سكر'},
+];
+
+function getCart(){ return JSON.parse(localStorage.getItem('sahla_cart') || '[]'); }
+function setCart(c){ 
+  localStorage.setItem('sahla_cart', JSON.stringify(c)); 
+  document.getElementById('count').innerText = c.length;
+  document.getElementById('cartPreview').innerText = c.slice(-2).map(i=>i.baseName||i.name).join(' + ');
+  document.getElementById('deliveryBtn').classList.toggle('show', c.length>0);
+  // لما يروح ناحية الكاشير (يمين خالص) اظهر زرار الطلب
+  checkCashier();
+}
+function checkCashier(){
+  let cart = document.getElementById('movingCart');
+  let pos = parseFloat(cart.style.left || '50');
+  // لو السلة قربت من اليمين خالص اعتبره عند الكاشير
+  if(pos > 75){ document.getElementById('deliveryBtn').classList.add('show'); }
+}
+
+function renderShelves(){
+  let left = document.getElementById('leftShelf');
+  let right = document.getElementById('rightShelf');
+  left.innerHTML = '<div class=\"shelf-title\">رفوف البقالة</div>';
+  right.innerHTML = '<div class=\"shelf-title\">رفوف المشروبات والمنظفات</div>';
+  groceries.forEach((g,i)=>{
+    let div = document.createElement('div');
+    div.className='product-drag';
+    div.draggable=true;
+    div.dataset.id=g.id;
+    div.innerHTML=`<img src=\"${g.name}.png\" onerror=\"this.src='https://cdn-icons-png.flaticon.com/512/3081/3081986.png'\"><b>${g.name}</b>`;
+    // drag events
+    div.addEventListener('dragstart', e=>{ e.dataTransfer.setData('id', g.id); div.style.opacity=.4 });
+    div.addEventListener('dragend', ()=> div.style.opacity=1 );
+    // touch drag
+    div.addEventListener('pointerdown', startTouchDrag);
+    if(i%2==0) left.appendChild(div); else right.appendChild(div);
+  });
+}
+
+// سحب للموبايل
+let draggedId=null, ghost=null;
+function startTouchDrag(e){
+  draggedId = this.dataset.id;
+  ghost = this.cloneNode(true);
+  ghost.style.position='fixed';ghost.style.zIndex=100;ghost.style.pointerEvents='none';ghost.style.opacity=.8;ghost.style.transform='scale(1.2)';
+  document.body.appendChild(ghost);
+  moveGhost(e);
+  this.setPointerCapture(e.pointerId);
+  this.addEventListener('pointermove', moveGhost);
+  this.addEventListener('pointerup', endTouchDrag);
+}
+function moveGhost(e){
+  if(!ghost) return;
+  ghost.style.left=(e.clientX-35)+'px';ghost.style.top=(e.clientY-35)+'px';
+  let cart = document.getElementById('movingCart').getBoundingClientRect();
+  let over = e.clientX>cart.left && e.clientX<cart.right && e.clientY>cart.top && e.clientY<cart.bottom;
+  document.getElementById('movingCart').classList.toggle('drag-over', over);
+  document.getElementById('dropHint').style.display = over ? 'block' : 'none';
+}
+function endTouchDrag(e){
+  let cart = document.getElementById('movingCart').getBoundingClientRect();
+  let over = e.clientX>cart.left && e.clientX<cart.right && e.clientY>cart.top && e.clientY<cart.bottom;
+  if(over && draggedId) addToCart(parseInt(draggedId), true);
+  if(ghost) ghost.remove(); ghost=null;
+  document.getElementById('movingCart').classList.remove('drag-over');
+  document.getElementById('dropHint').style.display='none';
+  this.removeEventListener('pointermove', moveGhost);
+}
+
+// السلة بتتحرك
+let cartX = 50;
+function moveCart(dx){
+  cartX = Math.max(10, Math.min(90, cartX + dx/4));
+  let el = document.getElementById('movingCart');
+  el.style.left = cartX + '%';
+  checkCashier();
+}
+function centerCart(){ cartX=50; document.getElementById('movingCart').style.left='50%'; }
+(function enableCartDrag(){
+  let cart = document.getElementById('movingCart');
+  let startX=null, startCartX=null;
+  cart.addEventListener('pointerdown', e=>{
+    startX=e.clientX; startCartX=cartX; cart.setPointerCapture(e.pointerId);
+  });
+  cart.addEventListener('pointermove', e=>{
+    if(startX===null) return;
+    let delta = (e.clientX - startX) / window.innerWidth * 100;
+    cartX = Math.max(10, Math.min(90, startCartX + delta*1.2));
+    cart.style.left = cartX + '%';
+    checkCashier();
+  });
+  cart.addEventListener('pointerup', ()=>{ startX=null; });
+})();
+
+// drop من الكمبيوتر
+let market = document.getElementById('market');
+market.addEventListener('dragover', e=>{ e.preventDefault(); document.getElementById('movingCart').classList.add('drag-over'); });
+market.addEventListener('dragleave', ()=> document.getElementById('movingCart').classList.remove('drag-over'));
+market.addEventListener('drop', e=>{
+  e.preventDefault();
+  document.getElementById('movingCart').classList.remove('drag-over');
+  let id = e.dataTransfer.getData('id');
+  if(id) addToCart(parseInt(id), true);
+});
+
+function addToCart(id, fromDrag=false){
+  let item = groceries.find(g=>g.id==id);
+  let qty = fromDrag ? '1' : (document.getElementById('qty-'+id)?.value?.trim() || '');
+  if(!fromDrag && !qty){ alert('اكتب الكمية الأول - مثال: 2'); return; }
+  if(fromDrag){ qty = prompt(`كمية ${item.name}؟`, '1') || '1'; if(!qty) return; }
+  let cart = getCart();
+  cart.push({name: item.name + ' - ' + qty, type:'بقالة', id:item.id, qty: qty, baseName: item.name});
+  setCart(cart);
+  // اهتزاز السلة
+  let c = document.getElementById('movingCart');
+  c.animate([{transform:'translateX(-50%) scale(1)'},{transform:'translateX(-50%) scale(1.2)'},{transform:'translateX(-50%) scale(1)'}],{duration:300});
+  if(!fromDrag){ let inp=document.getElementById('qty-'+id); if(inp) inp.value=''; }
+}
+
+function addOther(){
+  let txt = document.getElementById('otherInput').value.trim();
+  if(!txt){ alert('اكتب اللي عايزه الاول'); return; }
+  let cart = getCart();
+  cart.push({name: txt, type:'بقالة - طلب خاص', baseName: txt});
+  setCart(cart);
+  document.getElementById('otherInput').value='';
+}
+function goCart(){
+  if(getCart().length==0){ alert('السلة فاضية ضيف حاجة الاول'); return; }
+  window.location.href='cart.html';
+}
+
+renderShelves();
+setCart(getCart());
+</script>
+</body>
+  </html>
