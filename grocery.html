@@ -1,0 +1,333 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سهلة - قسم البقالة</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;background:#f4f5f5;color:#222;
+  font-family:Tahoma,Arial,sans-serif;
+}
+.header{
+  background:linear-gradient(120deg,#ff8b00,#ff5700);
+  color:white;padding:25px 18px 20px;
+  border-radius:0 0 28px 28px;
+}
+.top{display:flex;align-items:center;justify-content:space-between}
+.title{font-size:29px;font-weight:bold}
+.header-icons{font-size:27px;display:flex;gap:18px}
+.brand{font-size:14px;margin-top:22px;text-align:left}
+.back{
+  background:#d94a00;border:0;border-radius:50%;
+  color:white;width:48px;height:48px;font-size:27px;
+}
+.searchbox{
+  display:flex;gap:10px;background:white;
+  margin:18px 14px;padding:10px;border-radius:18px;
+  box-shadow:0 3px 12px #0000000d;
+}
+.searchbox input{
+  min-width:0;flex:1;border:1px solid #d7b99e;
+  border-radius:14px;padding:15px 10px;
+  font-size:16px;text-align:right;outline:none;
+}
+.orange{
+  background:#ff6800;color:white;border:0;
+  border-radius:13px;padding:13px 17px;
+  font-size:17px;font-weight:bold;white-space:nowrap;
+}
+.hero{
+  position:relative;margin:14px 14px 0;
+  height: min(125vw,650px);min-height:390px;
+  border-radius:23px;overflow:hidden;background:#ddd;
+}
+.hero img{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+.hero-title{
+  position:absolute;top:16px;left:0;right:0;
+  text-align:center;pointer-events:none;
+}
+.hero-title span{
+  display:inline-block;background:#ff6b00;color:white;
+  border:3px solid white;border-radius:16px;
+  padding:5px 16px;font-size:24px;font-weight:bold;
+  text-shadow:1px 2px 2px #743000;
+  box-shadow:0 2px 5px #3335;
+}
+.cart{
+  position:absolute;left:50%;bottom:18px;
+  transform:translateX(-50%);
+  width:64%;height:145px;
+  border:5px solid #444;border-top:8px solid #444;
+  border-radius:12px 12px 24px 24px;
+  background:#b8b8b855;
+  display:flex;flex-wrap:wrap;align-content:flex-start;
+  justify-content:center;gap:3px;padding:12px 5px;
+  touch-action:none;user-select:none;cursor:grab;
+  z-index:5;
+}
+.cart:before{
+  content:"";position:absolute;top:-15px;left:-12px;right:-12px;
+  height:9px;background:#555;border-radius:8px;
+}
+.cart:after{
+  content:"";position:absolute;bottom:-17px;left:12%;
+  width:18px;height:18px;background:#333;border-radius:50%;
+  box-shadow:calc(min(64vw,350px) - 65px) 0 #333;
+}
+.cart-item{font-size:26px;line-height:28px}
+.products-section{
+  margin:16px 14px;background:white;padding:15px;
+  border-radius:18px;
+}
+.products-section h3{margin:0 0 7px;font-size:19px}
+.hint{font-size:13px;color:#777;margin:0 0 12px}
+.products{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+}
+.product{
+  min-width:0;background:#fff6ee;border:1px solid #ffdfc8;
+  border-radius:12px;padding:10px 2px;text-align:center;
+  touch-action:none;user-select:none;cursor:grab;
+}
+.product .emoji{font-size:31px}
+.product small{display:block;font-size:12px;margin-top:5px}
+.dragging{
+  position:fixed!important;z-index:9999!important;
+  width:75px!important;opacity:.92;pointer-events:none;
+  box-shadow:0 5px 18px #0003;
+}
+.footer{
+  position:sticky;bottom:0;background:white;padding:12px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;box-shadow:0 -3px 12px #0000000d;
+  border-radius:16px 16px 0 0;
+}
+.total{font-weight:bold;font-size:18px}
+#notice{text-align:center;color:#777;font-size:13px;padding:8px}
+#cartView{display:none;margin:15px;background:white;border-radius:15px;padding:15px}
+#cartView h3{margin-top:0}
+.cart-row{padding:8px;border-bottom:1px solid #eee}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+  <div class="top">
+    <div class="header-icons">♟　♧</div>
+    <div class="title">🛒 قسم البقالة</div>
+  </div>
+  <div class="brand">✚ app.sahlah.client</div>
+</header>
+
+<div class="searchbox">
+  <button class="orange" onclick="addFirst()">إضافة للسلة</button>
+  <input id="search" placeholder="اطلب أي منتج ... مثال: بيبسي"
+         oninput="searchProducts()">
+  <span style="font-size:25px;align-self:center">⌕</span>
+</div>
+
+<div class="hero" id="hero">
+  <img
+    src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1000&q=85"
+    alt="سوبر ماركت"
+    onerror="this.style.display='none';document.getElementById('fallback').style.display='flex'">
+
+  <div id="fallback" style="display:none;position:absolute;inset:0;background:#f4e1c9;align-items:center;justify-content:center;font-size:70px">
+    🏪 🛒
+  </div>
+
+  <div class="hero-title"><span>البقالة</span></div>
+  <div class="cart" id="cart" aria-label="اسحب السلة لتحريكها"></div>
+</div>
+
+<div class="products-section">
+  <h3>🛍️ منتجات البقالة</h3>
+  <p class="hint">اضغط باستمرار على المنتج واسحبه إلى السلة، أو اضغط عليه لإضافته.</p>
+  <div class="products" id="products">
+    <div class="product" data-name="أرز" data-emoji="🍚"><div class="emoji">🍚</div><small>أرز</small></div>
+    <div class="product" data-name="مكرونة" data-emoji="🍝"><div class="emoji">🍝</div><small>مكرونة</small></div>
+    <div class="product" data-name="زيت" data-emoji="🫗"><div class="emoji">🫗</div><small>زيت</small></div>
+    <div class="product" data-name="لبن" data-emoji="🥛"><div class="emoji">🥛</div><small>لبن</small></div>
+    <div class="product" data-name="عيش" data-emoji="🍞"><div class="emoji">🍞</div><small>عيش</small></div>
+    <div class="product" data-name="جبنة" data-emoji="🧀"><div class="emoji">🧀</div><small>جبنة</small></div>
+    <div class="product" data-name="بيض" data-emoji="🥚"><div class="emoji">🥚</div><small>بيض</small></div>
+    <div class="product" data-name="عصير" data-emoji="🧃"><div class="emoji">🧃</div><small>عصير</small></div>
+    <div class="product" data-name="تفاح" data-emoji="🍎"><div class="emoji">🍎</div><small>تفاح</small></div>
+    <div class="product" data-name="موز" data-emoji="🍌"><div class="emoji">🍌</div><small>موز</small></div>
+    <div class="product" data-name="بسكويت" data-emoji="🍪"><div class="emoji">🍪</div><small>بسكويت</small></div>
+    <div class="product" data-name="شيبسي" data-emoji="🥔"><div class="emoji">🥔</div><small>شيبسي</small></div>
+  </div>
+</div>
+
+<div id="notice">ابدأ التسوق في سهلة ❤️</div>
+
+<div class="footer">
+  <button class="orange" onclick="showCart()">🛒 عرض السلة</button>
+  <div class="total">السلة: <span id="count">0</span> منتج</div>
+</div>
+
+<div id="cartView">
+  <h3>🛒 منتجات سلتك</h3>
+  <div id="cartList">السلة فارغة</div>
+  <button class="orange" onclick="clearCart()">إفراغ السلة</button>
+</div>
+
+<script>
+const cart = document.getElementById('cart');
+const hero = document.getElementById('hero');
+const count = document.getElementById('count');
+const notice = document.getElementById('notice');
+const cartList = document.getElementById('cartList');
+const cartView = document.getElementById('cartView');
+const products = [...document.querySelectorAll('.product')];
+
+let items = [];
+let drag = null;
+let startX = 0, startY = 0, offsetX = 0, offsetY = 0;
+let didMove = false;
+
+function renderCart(){
+  count.textContent = items.length;
+  cart.innerHTML = '';
+  items.forEach(item=>{
+    const span = document.createElement('span');
+    span.className = 'cart-item';
+    span.textContent = item.emoji;
+    span.title = item.name;
+    cart.appendChild(span);
+  });
+
+  if(!items.length){
+    cartList.textContent = 'السلة فارغة';
+  }else{
+    cartList.innerHTML = '';
+    const counts = {};
+    items.forEach(i=>counts[i.name]=(counts[i.name]||0)+1);
+    Object.entries(counts).forEach(([name,qty])=>{
+      const row = document.createElement('div');
+      row.className = 'cart-row';
+      row.textContent = name + ' × ' + qty;
+      cartList.appendChild(row);
+    });
+  }
+}
+
+function addProduct(product){
+  items.push({name:product.dataset.name,emoji:product.dataset.emoji});
+  renderCart();
+  notice.textContent = 'تمت إضافة ' + product.dataset.name + ' إلى السلة ✅';
+}
+
+products.forEach(product=>{
+  product.addEventListener('click',()=>{
+    if(!didMove) addProduct(product);
+  });
+
+  product.addEventListener('pointerdown',e=>{
+    if(e.button!==undefined && e.button!==0)return;
+    drag = {
+      type:'product',source:product,
+      name:product.dataset.name,emoji:product.dataset.emoji
+    };
+    const r=product.getBoundingClientRect();
+    offsetX=e.clientX-r.left;
+    offsetY=e.clientY-r.top;
+    startX=e.clientX;startY=e.clientY;didMove=false;
+  });
+});
+
+cart.addEventListener('pointerdown',e=>{
+  drag={type:'cart'};
+  const r=cart.getBoundingClientRect();
+  offsetX=e.clientX-r.left;
+  offsetY=e.clientY-r.top;
+  startX=e.clientX;startY=e.clientY;didMove=false;
+});
+
+document.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  if(Math.abs(e.clientX-startX)>7||Math.abs(e.clientY-startY)>7)
+    didMove=true;
+  if(!didMove)return;
+
+  if(drag.type==='product'){
+    let ghost=document.getElementById('dragGhost');
+    if(!ghost){
+      ghost=drag.source.cloneNode(true);
+      ghost.id='dragGhost';
+      ghost.classList.add('dragging');
+      document.body.appendChild(ghost);
+    }
+    ghost.style.left=(e.clientX-offsetX)+'px';
+    ghost.style.top=(e.clientY-offsetY)+'px';
+  }else{
+    const r=hero.getBoundingClientRect();
+    let x=e.clientX-r.left-offsetX;
+    let y=e.clientY-r.top-offsetY;
+    x=Math.max(0,Math.min(x,hero.clientWidth-cart.offsetWidth));
+    y=Math.max(45,Math.min(y,hero.clientHeight-cart.offsetHeight));
+    cart.style.left=x+'px';
+    cart.style.top=y+'px';
+    cart.style.right='auto';
+    cart.style.bottom='auto';
+    cart.style.transform='none';
+  }
+});
+
+document.addEventListener('pointerup',e=>{
+  if(!drag)return;
+  const current=drag;
+  drag=null;
+
+  const ghost=document.getElementById('dragGhost');
+  if(current.type==='product'){
+    if(didMove){
+      const r=cart.getBoundingClientRect();
+      if(e.clientX>=r.left&&e.clientX<=r.right&&
+         e.clientY>=r.top&&e.clientY<=r.bottom){
+        addProduct(current.source);
+      }else{
+        notice.textContent='اسحب المنتج إلى السلة لإضافته';
+      }
+      if(ghost)ghost.remove();
+    }
+  }
+});
+
+function addFirst(){
+  const p=products.find(p=>p.style.display!=='none');
+  if(p)addProduct(p);
+}
+
+function searchProducts(){
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  products.forEach(p=>{
+    p.style.display=p.dataset.name.toLowerCase().includes(q)?'':'none';
+  });
+}
+
+function showCart(){
+  cartView.style.display=cartView.style.display==='block'?'none':'block';
+  cartView.scrollIntoView({behavior:'smooth',block:'nearest'});
+  renderCart();
+}
+
+function clearCart(){
+  items=[];
+  renderCart();
+  notice.textContent='تم إفراغ السلة';
+}
+
+renderCart();
+</script>
+</body>
+  </html>
+  
